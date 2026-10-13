@@ -3,142 +3,116 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>acnlb — alpha CN Legal Bench</title>
-<meta name="description" content="A work-product-and-rubric benchmark for Chinese-law model and skill evaluation.">
+<title>acnlb — a CN legal benchmark you can fork</title>
+<meta name="description" content="A work-product-and-rubric benchmark for Chinese-law model and skill evaluation. Run it in one click on GitHub, or locally with your own key.">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="site-header">
-  <div class="wrap">
-    <div class="brand">
-      <span class="logo">acnlb</span>
-      <span class="tagline" data-lang="en">alpha CN Legal Bench</span>
-      <span class="tagline" data-lang="zh" hidden>alpha 中文法律评测</span>
-    </div>
-    <button id="lang-toggle" class="lang-toggle" aria-label="Toggle language">中文</button>
+
+<svg class="mark-defs" aria-hidden="true" width="0" height="0">
+  <symbol id="burst" viewBox="0 0 24 24">
+    <path d="M12 2.5v19M2.5 12h19M5.2 5.2l13.6 13.6M18.8 5.2L5.2 18.8"
+          fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<header class="topbar">
+  <div class="col">
+    <a class="wordmark" href="#top">
+      <svg class="burst" aria-hidden="true"><use href="#burst"/></svg>
+      <span>acnlb</span>
+    </a>
+    <nav class="topnav">
+      <a href="../../actions/workflows/run-eval.yml" data-repo-link="workflow">Actions</a>
+      <a href="../../tree/main/items/sample" data-repo-link="items">Sample items</a>
+      <button id="lang-toggle" class="lang" type="button" aria-label="Switch language">中文</button>
+    </nav>
   </div>
 </header>
 
-<main class="wrap">
+<main id="top">
+  <div class="col">
 
-  <section class="hero">
-    <h1 data-lang="en">Does the model produce lawyer-quality CN work product?</h1>
-    <h1 data-lang="zh" hidden>模型能否产出达到律师水准的中文法律工作成果？</h1>
-    <p data-lang="en" class="lede">
-      acnlb scores the <strong>deliverable</strong> a Chinese-law task would require, not a
-      multiple-choice label. Each item ships a task, optional documents, a gold answer, and a
-      rubric of atomic <code>Does the response state X?</code> points plus a closed
-      negative-point taxonomy for the CN-specific failure modes — citing repealed law,
-      fabricating judicial interpretations, treating a 参考性案例 as binding.
-    </p>
-    <p data-lang="zh" hidden class="lede">
-      acnlb 评测的是中文法律任务所要求的<strong>工作成果</strong>，而非选择题答案。每道题包含任务、
-      可选附件、参考答案，以及由原子化「回答是否陈述了 X？」得分点与一套封闭负分分类体系构成的 rubric，
-      专门捕捉中文法律场景特有的失误——引用已废止法律、编造司法解释、把参考性案例当作约束性案例。
-    </p>
+    <section class="hero">
+      <svg class="burst burst-hero" aria-hidden="true"><use href="#burst"/></svg>
+      <h1 data-lang="en">Score the legal work product, not a multiple-choice answer.</h1>
+      <h1 data-lang="zh" hidden>评测的是法律工作成果，而非选择题答案。</h1>
 
-    <div class="cta-row">
-      <a id="run-on-gh" class="btn btn-primary" href="#" target="_blank" rel="noopener">
-        <span data-lang="en">▶ Run this eval on GitHub</span>
-        <span data-lang="zh" hidden>▶ 在 GitHub 上运行评测</span>
-      </a>
-      <a id="colab-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener">
-        <span data-lang="en">Open in Colab</span>
-        <span data-lang="zh" hidden>在 Colab 中打开</span>
-      </a>
-    </div>
-    <p class="hint" data-lang="en">Runs the sample set with your repo secret key. Nothing to install.</p>
-    <p class="hint" data-lang="zh" hidden>使用仓库密钥运行示例集，无需本地安装。</p>
-  </section>
+      <p class="lede" data-lang="en">
+        A benchmark harness for Chinese-law tasks. Each item ships a task, optional
+        documents, a gold answer, and a rubric of atomic propositions — plus a closed
+        taxonomy for the CN-specific failures: citing repealed law, inventing a
+        司法解释, treating a 参考性案例 as binding.
+      </p>
+      <p class="lede" data-lang="zh" hidden>
+        面向中文法律任务的评测框架。每道题包含任务、可选附件、参考答案，以及由原子化得分点构成的
+        rubric，并配备一套封闭的负分分类体系，专门捕捉中文法律场景特有的失误：引用已废止法律、
+        编造司法解释、把参考性案例当作约束性案例。
+      </p>
 
-  <section class="grid">
-    <div class="card">
-      <h3 data-lang="en">Three tracks</h3>
-      <h3 data-lang="zh" hidden>三个评测轨道</h3>
-      <p data-lang="en"><strong>Core</strong> (reasoning + drafting) · <strong>Workflows</strong>
-        (结构化抽取, 合同审查) · <strong>Retrieval</strong> (法条 / 类案 / 条款)</p>
-      <p data-lang="zh" hidden"><strong>Core</strong>（推理与起草）· <strong>Workflows</strong>
-        （结构化抽取、合同审查）· <strong>Retrieval</strong>（法条／类案／条款检索）</p>
-    </div>
-    <div class="card">
-      <h3 data-lang="en">Scoring</h3>
-      <h3 data-lang="zh" hidden>评分</h3>
-      <p data-lang="en"><code>Σ(affirmative points hit) − Σ(negative points)</code>, floored at 0.
-        Per-item <em>and</em> per-track — never only a mean.</p>
-      <p data-lang="zh" hidden"><code>Σ(命中得分点) − Σ(负分)</code>，下限为 0。逐题<em>与</em>逐轨道报告，绝不止给出平均分。</p>
-    </div>
-    <div class="card">
-      <h3 data-lang="en">Judge</h3>
-      <h3 data-lang="zh" hidden>评阅</h3>
-      <p data-lang="en"><strong>manual</strong> (worksheet / verdicts file) is the reference.
-        The <strong>llm</strong> judge is marked <span class="badge badge-warn">UNVALIDATED</span>
-        until a labeled set gives Cohen's κ ≥ threshold.</p>
-      <p data-lang="zh" hidden"><strong>manual</strong>（评分表／评阅文件）为基准路径。
-        <strong>llm</strong> 评阅标注为 <span class="badge badge-warn">未验证</span>，
-        直至在有标注集上算出 Cohen's κ ≥ 阈值。</p>
-    </div>
-  </section>
+      <div class="actions">
+        <a class="btn btn-fill" href="../../actions/workflows/run-eval.yml" data-repo-link="workflow"
+           data-lang="en">Run the eval on GitHub</a>
+        <a class="btn btn-fill" href="../../actions/workflows/run-eval.yml" data-repo-link="workflow"
+           data-lang="zh" hidden>在 GitHub 上运行评测</a>
+        <a class="btn btn-line" href="#local" data-lang="en">Run it locally</a>
+        <a class="btn btn-line" href="#local" data-lang="zh" hidden>本地运行</a>
+      </div>
+    </section>
 
-  <section class="panel">
-    <h2 data-lang="en">Run locally</h2>
-    <h2 data-lang="zh" hidden>本地运行</h2>
-    <p data-lang="en">Bring your own OpenAI-compatible key. The CLI is the single source of
-      truth — GitHub Actions shells out to the very same command.</p>
-    <p data-lang="zh" hidden>自备 OpenAI 兼容的 API 密钥。命令行是唯一入口——GitHub Actions 调用的正是同一条命令。</p>
-    <pre><code>git clone &lt;this-repo&gt; &amp;&amp; cd acnlb
-pip install pyyaml
-export MODEL_API_KEY=sk-...           # never commit this
+    <section class="facts" aria-label="At a glance">
+      <div class="fact">
+        <span class="fact-k" data-lang="en">Tracks</span>
+        <span class="fact-k" data-lang="zh" hidden>评测轨道</span>
+        <span class="fact-v">core · workflows · retrieval</span>
+      </div>
+      <div class="fact">
+        <span class="fact-k" data-lang="en">Score</span>
+        <span class="fact-k" data-lang="zh" hidden>评分</span>
+        <span class="fact-v" data-lang="en">points hit, minus errors, floored at zero</span>
+        <span class="fact-v" data-lang="zh" hidden>命中得分点减负分，下限为零</span>
+      </div>
+      <div class="fact">
+        <span class="fact-k" data-lang="en">Judge</span>
+        <span class="fact-k" data-lang="zh" hidden>评阅</span>
+        <span class="fact-v" data-lang="en">human first; LLM judge unvalidated</span>
+        <span class="fact-v" data-lang="zh" hidden>人工优先；LLM 评阅未经验证</span>
+      </div>
+    </section>
 
-# 1. inspect the sample items
-python -m acnlb validate --items items/sample
+    <section class="latest" id="latest">
+      <div class="sec-head">
+        <h2 data-lang="en">Latest published run</h2>
+        <h2 data-lang="zh" hidden>最新发布结果</h2>
+        <a class="quiet" href="../../blob/main/results/latest.md" data-repo-link="report">full report</a>
+      </div>
+      <div id="results-status" class="muted">Loading…</div>
+      <div id="results-body"></div>
+    </section>
 
-# 2. score a frozen fixture (no API key, deterministic, run twice → identical)
-python -m acnlb score \
-  --response items/sample/fixtures/core-tx-0001.good.txt \
-  --verdicts items/sample/fixtures/core-tx-0001.good.verdicts.json \
-  --rubric   items/sample/core-tx-0001.rubric.md
+    <section class="local" id="local">
+      <div class="sec-head">
+        <h2 data-lang="en">Run it locally</h2>
+        <h2 data-lang="zh" hidden>本地运行</h2>
+      </div>
+      <p class="soft" data-lang="en">Bring your own OpenAI-compatible key. The Actions workflow
+        calls the very same command.</p>
+      <p class="soft" data-lang="zh" hidden>自备 OpenAI 兼容密钥。Actions 调用的正是同一条命令。</p>
+      <pre><code>pip install pyyaml
+export MODEL_API_KEY=sk-...
 
-# 3. run the model over the sample set (exports grading worksheets first)
-python -m acnlb run --items items/sample --model models.example.yaml --judge manual
+python -m acnlb run --items items/sample \
+  --model models.example.yaml --judge manual</code></pre>
+    </section>
 
-# 4. re-run with your verdicts once graded
-python -m acnlb run --items items/sample --model models.example.yaml \
-  --judge manual --verdicts runs/latest/worksheets</code></pre>
-  </section>
-
-  <section class="panel" id="latest">
-    <h2 data-lang="en">Latest published results</h2>
-    <h2 data-lang="zh" hidden>最新发布结果</h2>
-    <div id="results-status" class="muted">Loading results…</div>
-    <div id="results-body"></div>
-  </section>
-
-  <section class="panel">
-    <h2 data-lang="en">Negative-point taxonomy</h2>
-    <h2 data-lang="zh" hidden>负分分类体系</h2>
-    <p data-lang="en">The closed vocabulary every rubric draws from. Consistency here is what
-      makes scores comparable across tasks and across time.</p>
-    <p data-lang="zh" hidden>所有 rubric 共用的封闭词表。正是这一层的统一，使分数在不同任务、不同时间之间可比。</p>
-    <table id="taxonomy">
-      <thead><tr><th>Code</th><th>Error</th><th>Points</th></tr></thead>
-      <tbody>
-        <tr><td><code>HALLUC_FACT</code></td><td>编造事实 / Fabricated fact</td><td>−1 each</td></tr>
-        <tr><td><code>HALLUC_CITE</code></td><td>编造引用 / Fabricated citation</td><td>−1 each</td></tr>
-        <tr><td><code>REPEALED_LAW</code></td><td>引用已废止法律 / Repealed law</td><td>−1 each</td></tr>
-        <tr><td><code>WRONG_HIERARCHY</code></td><td>效力位阶错误 / Hierarchy error</td><td>−1 each</td></tr>
-        <tr><td><code>EXTRATEXT</code></td><td>冗余/错误引申 / Extraneous</td><td>−0.5 each</td></tr>
-        <tr><td><code>FORMAT_BREACH</code></td><td>格式违规 / Format breach</td><td>task-specific</td></tr>
-      </tbody>
-    </table>
-  </section>
-
+  </div>
 </main>
 
-<footer class="site-footer">
-  <div class="wrap">
-    <p data-lang="en">Sample items are <strong>SYNTHETIC</strong>. Real matters are added privately;
-      only <code>items/sample</code> is public.</p>
-    <p data-lang="zh" hidden">示例题均为<strong>合成数据</strong>。真实题目私下添加；公开的只有 <code>items/sample</code>。</p>
+<footer>
+  <div class="col">
+    <p data-lang="en">Sample items under <code>items/sample</code> are synthetic. Real matters
+      are added privately. MIT licensed.</p>
+    <p data-lang="zh" hidden><code>items/sample</code> 下的示例题均为合成数据，真实题目私下添加。MIT 许可。</p>
   </div>
 </footer>
 
