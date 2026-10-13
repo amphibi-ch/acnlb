@@ -23,19 +23,33 @@ items/sample/
 
 ## Adding a real item
 
-1. Copy an item JSON and its rubric; replace the fields. **Write the gold answer
-   first, then derive the rubric from it** (§3.6) — never the reverse.
-2. Every substance line must be an atomic ``Does the response state X?`` question
-   and, where possible, traceable to a specific 条.
+**Preferred: the intake form** (no JSON by hand).
+
+```bash
+cp items/INTAKE.template.md my-item.md      # fill it in
+python -m acnlb new --intake my-item.md --out items/real
+```
+
+`new` writes `<id>.json`, `gold/<id>.md`, and `<id>.rubric.md` (with the negative
+taxonomy pre-filled). Then:
+
+1. Write the **gold answer first**, then derive the rubric from it (§3.6) — never the
+   reverse.
+2. Every substance line must be an atomic ``Does the response state X?`` question and,
+   where possible, traceable to a specific 条.
 3. Any negative line must carry a ``[CODE]`` from the closed taxonomy in
    ``acnlb/negatives.py``. ``validate`` rejects anything else.
-4. Keep `max_positive_points` equal to the rubric's affirmative sum — `validate`
-   checks this.
+4. Keep `max_positive_points` equal to the rubric's affirmative sum. `new` sets this
+   for you; if you edit the rubric by hand, update it (or re-run `new --force`).
 5. Run:
    ```
    python -m acnlb validate --items items/real
    python -m acnlb run --items items/real --model models.yaml --judge manual
    ```
+
+**Raw JSON route** — if you'd rather write the item file directly, copy
+`items/sample/<id>.json` or `items/_template.item.json` (the `_` prefix makes the
+loader skip it) and fill in the §3.3 fields. Everything else is identical.
 
 ## Keeping real items private
 

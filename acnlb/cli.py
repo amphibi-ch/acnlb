@@ -21,6 +21,7 @@ from .report import render_markdown, write_report
 from .rubric import parse_rubric_file, render_worksheet, validate_rubric
 from .runner import run as run_eval
 from .runner import write_run
+from .scaffold import scaffold
 from .schema import load_items, validate_item
 from .scorer import canonical_json, score
 
@@ -129,6 +130,26 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_new(args: argparse.Namespace) -> int:
+    """Scaffold an item directory from a plain-text intake form."""
+    try:
+        written, warnings = scaffold(
+            args.intake, args.out, item_id=args.id, force=args.force
+        )
+    except (ValueError, FileExistsError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    for p in written:
+        print(f"wrote {p}")
+    for w in warnings:
+        print(f"WARNING: {w}", file=sys.stderr)
+    print(
+        "\nNext: fill the gold answer first, then the rubric (design doc §3.6), "
+        f"then run:  python -m acnlb validate --items {args.out}"
+    )
+    return 0
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     items_root = Path(args.items).resolve()
     items = load_items(items_root)
@@ -139,6 +160,12 @@ def cmd_validate(args: argparse.Namespace) -> int:
         rubric = parse_rubric_file(items_root / item.rubric)
         for p in validate_rubric(rubric, expected_id=item.id):
             problems.append(f"{item.id}: {p}")
+        for a in rubric.affirmative:
+            if "TODO" in a.text:
+                problems.append(f"{item.id}: affirmative point still a TODO placeholder: {a.text[:40]}")
+        gold_path = items_root / item.gold_answer if item.gold_answer else None
+        if gold_path and gold_path.exists() and "TODO" in gold_path.read_text(encoding="utf-8"):
+            problems.append(f"{item.id}: gold answer still contains TODOs")
         if not item.is_synthetic and "sample" in str(items_root):
             problems.append(f"{item.id}: item under items/sample must be marked SYNTHETIC")
     if problems:
@@ -199,6 +226,13 @@ def build_parser() -> argparse.ArgumentParser:
     v = sub.add_parser("validate", help="validate items + rubrics")
     v.add_argument("--items", required=True)
     v.set_defaults(func=cmd_validate)
+
+    n = sub.add_parser("new", help="scaffold an item from a plain-text intake form")
+    n.add_argument("--intake", required=True, help="intake markdown (see items/INTAKE.template.md)")
+    n.add_argument("--out", required=True, help="items dir to write into")
+    n.add_argument("--id", default=None, help="override the id from the form")
+    n.add_argument("--force", action="store_true", help="overwrite existing files")
+    n.set_defaults(func=cmd_new)
 
     jv = sub.add_parser("judge-validate", help="compute Cohen's kappa for the LLM judge")
     jv.add_argument("--labels", required=True)

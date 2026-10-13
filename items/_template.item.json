@@ -1,0 +1,16 @@
+{
+  "id": "REPLACE-ME-0001",
+  "track": "core",
+  "category": "Transaction",
+  "task_type": "合同审查与风险点识别",
+  "task": "一句话任务名",
+  "prompt": "给模型的完整指令（原样写，不要在这里解释 rubric）。",
+  "documents": [],
+  "has_context": false,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《民法典》"],
+  "gold_answer": "gold/REPLACE-ME-0001.md",
+  "rubric": "REPLACE-ME-0001.rubric.md",
+  "max_positive_points": 1,
+  "notes": "REPLACE ME — 这个文件以下划线开头，load_items 会跳过它，可安全作为模板留在 items/ 下。"
+}

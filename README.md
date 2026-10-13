@@ -102,18 +102,31 @@ front door and deep-links to that workflow.
 
 ## Point this at your real items
 
-Real items need no code change:
+Real items need no code change. **You don't write JSON by hand** — fill in a plain-text
+intake form and the scaffolder emits a correctly-shaped item directory:
 
-1. Put them under a private path, e.g. `items/real/`, using the same JSON schema and
-   the same rubric markdown. Keep that directory out of the public repo (gitignore it
-   or use a private submodule).
-2. `python -m acnlb validate --items items/real`
-3. `python -m acnlb run --items items/real --model models.yaml --judge manual`
-4. For Actions: point the `item_path` input at `items/real` (run it from a private
-   checkout or a self-hosted runner if the items must stay confidential).
+```bash
+cp items/INTAKE.template.md my-item.md     # edit it
+python -m acnlb new --intake my-item.md --out items/real
+python -m acnlb validate --items items/real
+python -m acnlb run --items items/real --model models.yaml --judge manual
+```
 
-The harness, the schema, the negative taxonomy, and the site are unchanged — only the
-`--items` path differs. Details: [items/README.md](items/README.md).
+`new` writes `<id>.json` + `gold/<id>.md` + `<id>.rubric.md`, computing
+`max_positive_points` from the rubric so the two can't disagree, and pre-filling the
+rubric's negative section with the full closed taxonomy. It refuses to overwrite
+unless you pass `--force`, and warns about missing documents. `validate` rejects any
+item whose rubric or gold answer still contains `TODO`.
+
+Then, to keep the items private: put them under a path that is not published (e.g.
+`items/real/`, gitignored or a private submodule), and for Actions point the
+`item_path` input at it from a private checkout or self-hosted runner.
+
+There's also a raw-JSON route if you prefer to write it directly — the schema is
+§3.3, the sample items are the reference, and `items/_template.item.json` is a
+blank one (`_`-prefixed files are skipped by the loader). The harness, the schema,
+the negative taxonomy, and the site are unchanged either way — only the `--items`
+path differs. Details: [items/README.md](items/README.md).
 
 ## Repo layout
 

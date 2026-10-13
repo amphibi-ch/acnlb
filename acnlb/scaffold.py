@@ -1,0 +1,210 @@
+"""Scaffold item directories from a plain-text intake form.
+
+Authoring an item needs a task, a prompt, documents, a gold answer, and a rubric
+(design doc §3.3-§3.4, §3.6). Only the last two cost real lawyer time; the rest is
+metadata and file plumbing. This module turns a filled-in intake form into a
+correctly-shaped item directory, so a drafter never hand-writes JSON.
+
+Usage:  python -m acnlb new --intake <form.md> --out items/real
+See `items/INTAKE.template.md` for the form.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from .rubric import parse_rubric_text
+from .schema import Item
+
+_SECTION = re.compile(r"^##\s+(.+?)\s*$")
+_HEADER_LINE = re.compile(r"^([A-Za-z_][A-Za-z0-9_ ]*?)\s*[:：]\s*(.*)$")
+
+# Section headings the parser understands (case-insensitive).
+_GOLD = ("gold answer", "gold", "参考答案")
+_KNOWN = {"prompt", "documents", "rubric", "notes"} | set(_GOLD)
+
+# Skeleton rubric: §3.4 headings, one Style=N/A section, and the FULL closed
+# negative taxonomy pre-filled so a drafter picks from the allowed vocabulary
+# rather than inventing codes. Affirmative lines carry TODO — `validate` rejects
+# them until a real proposition replaces them.
+DEFAULT_RUBRIC = """# {item_id} rubric — {task}
+
+## Affirmative Points
+
+### 1. Structure (格式与结构)
+- 1 pt  TODO：格式或结构要求，例如「是否按「风险等级」或「条款类型」分层呈现？」
+
+### 2. Style (风格)
+- N/A
+
+### 3. Substance (实质)
+- 1 pt  TODO：一个可核验的实质命题，例如「是否指出需完成其他股东优先购买权放弃程序？【《公司法》第71条】」
+
+## Negative Points
+- -1 pt  [HALLUC_FACT] 编造文件/合同里不存在的事实、条款或数字
+- -1 pt  [HALLUC_CITE] 编造不存在的法条、案号、司法解释
+- -1 pt  [REPEALED_LAW] 引用已废止法律（如《合同法》《担保法》）或旧版本条文
+- -1 pt  [WRONG_HIERARCHY] 把非约束性来源当约束性（参考性案例当指导性案例、地方文件当司法解释）
+- -0.5 pt [EXTRATEXT] 准确但无关或错误引申的冗余表述
+- -2 pts [FORMAT_BREACH] 未满足明确格式要求（长度下限、必含小节）——如不适用请删除本行
+"""
+
+
+@dataclass
+class Intake:
+    meta: dict[str, str] = field(default_factory=dict)
+    prompt: str = ""
+    documents: list[str] = field(default_factory=list)
+    gold: str = ""
+    rubric: str = ""
+    notes: str = ""
+
+
+def parse_intake(text: str) -> Intake:
+    """Parse an intake form. Header is ``key: value`` lines; then ``## Section`` blocks."""
+    intake = Intake()
+    section: str | None = None
+    buf: list[str] = []
+
+    def flush() -> None:
+        nonlocal buf, section
+        if section is not None:
+            block = "\n".join(buf).strip("\n")
+            if section == "prompt":
+                intake.prompt = block.strip()
+            elif section == "documents":
+                intake.documents = _parse_list(block)
+            elif section in _GOLD:
+                intake.gold = block.strip()
+            elif section == "rubric":
+                intake.rubric = block.strip()
+            elif section == "notes":
+                intake.notes = block.strip()
+        buf = []
+
+    for raw in text.splitlines():
+        line = raw.rstrip()
+        m = _SECTION.match(line)
+        if m and m.group(1).strip().lower() in _KNOWN:
+            flush()
+            section = m.group(1).strip().lower()
+            continue
+        if section is None:
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            hm = _HEADER_LINE.match(line.strip())
+            if hm:
+                key = hm.group(1).strip().lower().replace(" ", "_")
+                intake.meta[key] = hm.group(2).strip()
+            continue
+        buf.append(line)
+    flush()
+    return intake
+
+
+def _parse_list(block: str) -> list[str]:
+    out = []
+    for line in block.splitlines():
+        s = line.strip().lstrip("-*").strip()
+        if s and not s.startswith("#"):
+            out.append(s)
+    return out
+
+
+def _split_basis(value: str) -> list[str]:
+    return [p.strip() for p in re.split(r"[,，、;；]", value or "") if p.strip()]
+
+
+def _as_bool(value: str) -> bool:
+    v = str(value).strip().lower()
+    if v in ("true", "yes", "y", "1", "是", "有", "有附件"):
+        return True
+    if v in ("false", "no", "n", "0", "否", "无", "无附件"):
+        return False
+    raise ValueError(f"has_context must be true/false, got {value!r}")
+
+
+def scaffold(
+    intake_path: str | Path,
+    out_dir: str | Path,
+    *,
+    item_id: str | None = None,
+    force: bool = False,
+) -> tuple[list[Path], list[str]]:
+    """Write ``<id>.json`` + ``gold/<id>.md`` + ``<id>.rubric.md``. Returns (paths, warnings)."""
+    intake = parse_intake(Path(intake_path).read_text(encoding="utf-8"))
+    meta = intake.meta
+
+    iid = item_id or meta.get("id", "")
+    if not iid:
+        raise ValueError("intake is missing 'id'")
+    missing = [k for k in ("track", "task_type", "task") if not meta.get(k)]
+    if missing:
+        raise ValueError(f"intake is missing required field(s): {', '.join(missing)}")
+    if not intake.prompt.strip():
+        raise ValueError("intake is missing a '## Prompt' section")
+
+    task = meta["task"]
+    notes = (meta.get("notes", "") + ("\n" + intake.notes if intake.notes else "")).strip()
+
+    # Rubric first, so max_positive_points is derived from the real text.
+    rubric_text = intake.rubric or DEFAULT_RUBRIC.replace("{item_id}", iid).replace("{task}", task)
+    rubric = parse_rubric_text(rubric_text)
+
+    has_ctx = _as_bool(meta["has_context"]) if meta.get("has_context") else bool(intake.documents)
+
+    rubric_rel = f"{iid}.rubric.md"
+    gold_rel = f"gold/{iid}.md"
+    data = {
+        "id": iid,
+        "track": meta["track"],
+        "category": meta.get("category", ""),
+        "task_type": meta["task_type"],
+        "task": task,
+        "prompt": intake.prompt.strip(),
+        "documents": [{"path": p} for p in intake.documents],
+        "has_context": has_ctx,
+        "jurisdiction": meta.get("jurisdiction", "CN-mainland"),
+        "authority_basis": _split_basis(meta.get("authority_basis", "")),
+        "gold_answer": gold_rel,
+        "rubric": rubric_rel,
+        "max_positive_points": rubric.max_positive_points,
+        "notes": notes,
+    }
+
+    # Shape-check before writing anything: a bad form fails here, not at run time.
+    Item.from_dict(data)
+
+    out = Path(out_dir)
+    (out / "gold").mkdir(parents=True, exist_ok=True)
+    (out / "docs").mkdir(parents=True, exist_ok=True)
+
+    written: list[Path] = []
+
+    def write(p: Path, text: str) -> None:
+        if p.exists() and not force:
+            raise FileExistsError(f"{p} already exists (pass --force to overwrite)")
+        p.write_text(text, encoding="utf-8")
+        written.append(p)
+
+    gold_text = intake.gold or (
+        f"# {iid} 参考答案\n\n"
+        "<!-- TODO：先写「一名胜任律师会产出的回答」，再据此写 rubric（设计文档 §3.6）。\n"
+        "     顺序不能反——先写 rubric 会锚定在你想到的东西上，参考答案就不完整。 -->\n"
+    )
+
+    write(out / gold_rel, gold_text)
+    write(out / rubric_rel, rubric_text if rubric_text.endswith("\n") else rubric_text + "\n")
+    write(out / f"{iid}.json", json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+
+    warnings: list[str] = []
+    for doc in intake.documents:
+        if not (out / doc).exists():
+            warnings.append(f"document not found yet: {doc} (put it under {out}/)")
+    if "TODO" in rubric_text:
+        warnings.append("rubric still contains TODO placeholders — `validate` will reject it")
+
+    return written, warnings
