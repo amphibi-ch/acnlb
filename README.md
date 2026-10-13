@@ -1,7 +1,7 @@
 # acnlb — alpha CN Legal Bench
 
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![last eval run](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/OWNER/acnlb/main/results/latest.json&label=last%20eval&query=%24.started_at&color=4f8cff)](results/latest.md)
+[![last eval run](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/amphibi-ch/acnlb/master/results/latest.json&label=last%20eval&query=%24.started_at&color=4f8cff)](results/latest.md)
 [![sample items](https://img.shields.io/badge/sample%20items-10-informational)](items/sample)
 [![run on GitHub](https://img.shields.io/badge/run%20eval-GitHub%20Actions-2f6fe4)](../../actions/workflows/run-eval.yml)
 
