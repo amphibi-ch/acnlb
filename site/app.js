@@ -1,6 +1,7 @@
 /* acnlb front door. Static; no build step.
- * Reads the committed results/latest.json, wires the language toggle, and points
- * the repo-relative links at the right GitHub paths. No key is handled here. */
+ * Reads the committed site/items.json (item set) and results/latest.json (latest
+ * run), wires the language toggle, and points the repo-relative links at the
+ * right GitHub paths. No key is handled here. */
 (function () {
   "use strict";
 
@@ -16,8 +17,6 @@
     return "";
   }
 
-  // Paths inside site/ are static while developing; on Pages they resolve against
-  // the repo root. Rewrite them once we know the repo.
   // "HEAD" instead of a branch name: GitHub resolves it to the default branch,
   // so the links survive a main/master rename and work from any fork.
   function repoTarget(kind) {
@@ -25,7 +24,7 @@
     var base = "https://github.com/" + REPO;
     switch (kind) {
       case "workflow": return base + "/actions/workflows/" + WORKFLOW;
-      case "items": return base + "/tree/HEAD/items/sample";
+      case "items": return base + "/tree/HEAD/items/bench10";
       case "report": return base + "/blob/HEAD/results/latest.md";
       default: return base;
     }
@@ -39,18 +38,99 @@
     });
   }
 
+  /* ---------- small helpers ---------- */
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function fmt(n) {
+    n = Number(n) || 0;
+    return n % 1 === 0 ? String(n) : n.toFixed(1);
+  }
+
+  function headRow(list, numeric) {
+    return "<thead><tr>" + list.map(function (label, i) {
+      var num = numeric.indexOf(i) >= 0 ? ' class="num"' : "";
+      return "<th" + num + ">" + label + "</th>";
+    }).join("") + "</tr></thead>";
+  }
+
+  /* ---------- copy ---------- */
+
+  var T = {
+    zh: {
+      itemsHead: headRow(["编号", "轨道", "任务", "得分点", "材料", "依据"], [3, 4]),
+      loading: "加载中…",
+      itemsEmpty: "题集索引未生成。运行 python tools/build_items_index.py 后刷新。",
+      itemsSummary: function (d) {
+        return d.count + " 道题 · 合计 " + fmt(d.total_points) + " 分得分点 · 来源 " + (d.source || "");
+      },
+      docs: function (n) { return n ? n + " 份" : "开卷"; },
+      basisSep: "、",
+      noRun: "还没有发布的 run。触发工作流，或在本地跑一遍 CLI。",
+      runMeta: function (d) {
+        return (d.run_id || "run") + " · " + stamp(d.started_at) + " · " + (d.model || "?") +
+               " · 评阅：" + (d.judge_mode || "?");
+      },
+      overall: "总体",
+      scored: "已评分",
+      model: "模型",
+      resultHead: headRow(["题目", "任务类型", "轨道", "得分", "%"], [3, 4]),
+      err: "错误"
+    },
+    en: {
+      itemsHead: headRow(["ID", "Track", "Task", "Points", "Docs", "Authority"], [3, 4]),
+      loading: "Loading…",
+      itemsEmpty: "Item index not built. Run python tools/build_items_index.py and reload.",
+      itemsSummary: function (d) {
+        return d.count + " items · " + fmt(d.total_points) + " points · from " + (d.source || "");
+      },
+      docs: function (n) { return n ? String(n) : "open-book"; },
+      basisSep: ", ",
+      noRun: "No run published yet. Trigger the workflow, or run the CLI locally.",
+      runMeta: function (d) {
+        return (d.run_id || "run") + " · " + stamp(d.started_at) + " · " + (d.model || "?") +
+               " · judged by " + (d.judge_mode || "?");
+      },
+      overall: "Overall",
+      scored: "Items scored",
+      model: "Model",
+      resultHead: headRow(["Item", "Task", "Track", "Score", "%"], [3, 4]),
+      err: "err"
+    }
+  };
+
+  var LANG = "en";
+  function t() { return T[LANG]; }
+
+  function stamp(s) {
+    return (s || "").replace("T", " ").slice(0, 16);
+  }
+
   /* ---------- language ---------- */
 
   var LANG_KEY = "acnlb-lang";
 
   function setLang(lang) {
+    LANG = lang === "zh" ? "zh" : "en";
     document.querySelectorAll("[data-lang]").forEach(function (el) {
-      el.hidden = el.getAttribute("data-lang") !== lang;
+      el.hidden = el.getAttribute("data-lang") !== LANG;
     });
-    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    // One element per control: swap the label instead of shipping an en + a zh copy.
+    document.querySelectorAll("[data-label-en][data-label-zh]").forEach(function (el) {
+      var v = el.getAttribute(LANG === "zh" ? "data-label-zh" : "data-label-en");
+      if (v) el.textContent = v;
+    });
+    document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
     var btn = document.getElementById("lang-toggle");
-    if (btn) btn.textContent = lang === "zh" ? "EN" : "中文";
-    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+    if (btn) btn.textContent = LANG === "zh" ? "EN" : "中文";
+    try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {}
+    if (RUN_DATA) render(RUN_DATA);
+    if (ITEM_DATA) renderItems(ITEM_DATA);
   }
 
   function initLang() {
@@ -62,19 +142,56 @@
     setLang(saved);
     var btn = document.getElementById("lang-toggle");
     if (btn) btn.addEventListener("click", function () {
-      var cur = document.documentElement.lang.indexOf("zh") === 0 ? "zh" : "en";
-      setLang(cur === "zh" ? "en" : "zh");
+      setLang(LANG === "zh" ? "en" : "zh");
     });
   }
 
-  /* ---------- results ---------- */
+  /* ---------- item set (site/items.json) ---------- */
 
-  function el(tag, cls, text) {
-    var n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
+  var ITEM_DATA = null;
+
+  function renderItems(data) {
+    var status = document.getElementById("items-status");
+    var body = document.getElementById("items-body");
+    if (!status || !body) return;
+    body.textContent = "";
+
+    if (!data || !data.items || !data.items.length) {
+      status.textContent = t().itemsEmpty;
+      return;
+    }
+
+    status.textContent = t().itemsSummary(data);
+
+    var table = el("table", "items-table");
+    table.innerHTML = t().itemsHead;
+    var tb = el("tbody");
+    data.items.forEach(function (it) {
+      var tr = document.createElement("tr");
+      tr.appendChild(el("td", "mono", it.id));
+      tr.appendChild(el("td", null, it.track_label || it.track));
+
+      var task = el("td");
+      task.appendChild(el("div", "cell-main", it.task_type));
+      if (it.task) task.appendChild(el("div", "cell-sub", it.task));
+      tr.appendChild(task);
+
+      tr.appendChild(el("td", "num", fmt(it.points)));
+      tr.appendChild(el("td", "num", t().docs(it.documents)));
+      tr.appendChild(el("td", "basis",
+        (it.authority_basis || []).join(t().basisSep) || "—"));
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb);
+
+    var wrap = el("div", "table-wrap");
+    wrap.appendChild(table);
+    body.appendChild(wrap);
   }
+
+  /* ---------- latest run (results/latest.json) ---------- */
+
+  var RUN_DATA = null;
 
   function stat(k, v) {
     var d = el("div", "stat");
@@ -89,7 +206,8 @@
     body.textContent = "";
 
     if (!data || !data.items || !data.items.length) {
-      status.textContent = "No run published yet. Trigger the workflow to publish one.";
+      status.className = "muted";
+      status.textContent = t().noRun;
       return;
     }
 
@@ -99,14 +217,12 @@
     var overall = max ? (100 * earned / max) : 0;
 
     status.className = "tagline-run";
-    status.textContent =
-      (data.run_id || "run") + " · " + (data.started_at || "").replace("T", " ").slice(0, 16) +
-      " · " + (data.model || "?") + " · judged by " + (data.judge_mode || "?");
+    status.textContent = t().runMeta(data);
 
     var row = el("div", "stat-row");
-    row.appendChild(stat("Overall", overall.toFixed(1) + "%"));
-    row.appendChild(stat("Items scored", scored.length + " / " + data.items.length));
-    row.appendChild(stat("Model", data.model || "?"));
+    row.appendChild(stat(t().overall, overall.toFixed(1) + "%"));
+    row.appendChild(stat(t().scored, scored.length + " / " + data.items.length));
+    row.appendChild(stat(t().model, data.model || "?"));
     body.appendChild(row);
 
     var pt = data.per_track || {};
@@ -114,8 +230,7 @@
     if (tracks.length) {
       var wrap = el("div", "tracks");
       tracks.forEach(function (name) {
-        var t = pt[name];
-        var pct = Number(t.pct) || 0;
+        var pct = Number(pt[name].pct) || 0;
         var line = el("div", "track");
         line.appendChild(el("div", "name", name));
         var rail = el("div", "rail");
@@ -130,29 +245,31 @@
       // paint after insertion so the width transition reads as a reveal
       requestAnimationFrame(function () {
         wrap.querySelectorAll(".rail > span").forEach(function (f, idx) {
-          var t = pt[tracks[idx]];
-          f.style.width = Math.max(0, Math.min(100, Number(t.pct) || 0)) + "%";
+          var pct = Number(pt[tracks[idx]].pct) || 0;
+          f.style.width = Math.max(0, Math.min(100, pct)) + "%";
         });
       });
       wrap.querySelectorAll(".rail > span").forEach(function (f) { f.style.width = "0%"; });
     }
 
     var table = el("table");
-    table.innerHTML =
-      "<thead><tr><th>Item</th><th>Task</th><th>Track</th>" +
-      '<th class="num">Score</th><th class="num">%</th></tr></thead>';
+    table.innerHTML = t().resultHead;
     var tb = el("tbody");
     data.items.forEach(function (i) {
       var tr = document.createElement("tr");
-      tr.appendChild(el("td", null, i.item_id));
+      tr.appendChild(el("td", "mono", i.item_id));
       tr.appendChild(el("td", null, i.task_type));
       tr.appendChild(el("td", null, i.track));
-      tr.appendChild(el("td", "num", i.error ? "err" : i.score + " / " + i.max_positive_points));
+      tr.appendChild(el("td", "num",
+        i.error ? t().err : fmt(i.score) + " / " + fmt(i.max_positive_points)));
       tr.appendChild(el("td", "num", i.error ? "—" : i.pct.toFixed(1) + "%"));
       tb.appendChild(tr);
     });
     table.appendChild(tb);
-    body.appendChild(table);
+
+    var wrap2 = el("div", "table-wrap");
+    wrap2.appendChild(table);
+    body.appendChild(wrap2);
 
     if (data.notes && data.notes.length) {
       data.notes.forEach(function (n) {
@@ -163,27 +280,46 @@
 
   /* The page is served from the site root on Pages (results/ sits next to it)
    * and from site/ during local preview (results/ one level up). Try both so the
-   * same file works in either layout. */
+   * same file works in either layout. items.json always sits next to the page. */
   var RESULT_PATHS = ["results/latest.json", "../results/latest.json"];
+  var ITEM_PATHS = ["items.json"];
 
   function fetchFirst(paths, i) {
-    if (i >= paths.length) return Promise.reject(new Error("no results"));
+    if (i >= paths.length) return Promise.reject(new Error("not found"));
     return fetch(paths[i], { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .catch(function () { return fetchFirst(paths, i + 1); });
   }
 
-  function load() {
+  function loadItems() {
+    fetchFirst(ITEM_PATHS, 0)
+      .then(function (d) { ITEM_DATA = d; renderItems(d); })
+      .catch(function () {
+        var s = document.getElementById("items-status");
+        if (s) s.textContent = t().itemsEmpty;
+      });
+  }
+
+  function loadRun() {
     fetchFirst(RESULT_PATHS, 0)
-      .then(render)
+      .then(function (d) { RUN_DATA = d; render(d); })
       .catch(function () {
         var s = document.getElementById("results-status");
-        if (s) s.textContent =
-          "No results published yet. Trigger the workflow, or run the CLI locally.";
+        if (s) s.className = "muted";
+        if (s) s.textContent = t().noRun;
       });
+  }
+
+  function primeStatus() {
+    ["items-status", "results-status"].forEach(function (id) {
+      var n = document.getElementById(id);
+      if (n) n.textContent = t().loading;
+    });
   }
 
   wireLinks();
   initLang();
-  load();
+  primeStatus();
+  loadItems();
+  loadRun();
 })();

@@ -15,6 +15,8 @@ on:
     branches: [main, master]
     paths:
       - "site/**"
+      - "items/bench10/**"
+      - "tools/build_items_index.py"
       - "results/latest.json"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
@@ -41,6 +43,8 @@ jobs:
       - name: Assemble site
         run: |
           set -euo pipefail
+          # Rebuild the item-set index so the deployed table can never be stale.
+          python3 tools/build_items_index.py --items items/bench10 --out site/items.json
           rm -rf _site
           mkdir -p _site/results
           cp -R site/. _site/

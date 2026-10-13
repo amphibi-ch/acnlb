@@ -184,7 +184,7 @@ body {
 
 /* ---------- sections ---------- */
 
-.latest, .local { margin-top: 64px; scroll-margin-top: 24px; }
+.latest, .items, .run { margin-top: 64px; scroll-margin-top: 24px; }
 
 .sec-head {
   display: flex;
@@ -201,6 +201,36 @@ body {
   letter-spacing: -.01em;
   margin: 0;
 }
+.sec-head h3 { margin: 0; }
+
+/* ---------- how to run ---------- */
+
+.run-head {
+  margin: 30px 0 12px;
+  scroll-margin-top: 24px;
+}
+.run-head h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.steps {
+  margin: 0 0 8px;
+  padding-left: 1.4em;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  max-width: 44em;
+}
+.steps li { margin-bottom: 9px; }
+.steps b { color: var(--ink); font-weight: 600; }
+
+.soft a, .hint a, .steps a, footer a {
+  color: var(--rose-deep);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule-2);
+}
+.soft a:hover, .hint a:hover, .steps a:hover { border-bottom-color: var(--rose-deep); }
 .quiet {
   font-size: 13.5px;
   color: var(--muted);
@@ -276,6 +306,34 @@ th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var
 th { color: var(--muted); font-weight: 500; font-size: 13px; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 0; }
 tbody tr:last-child td { border-bottom: 0; }
+
+.table-wrap { overflow-x: auto; }
+.table-wrap table { margin-top: 0; }
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+/* item set — a read-only multi-column table, no interaction */
+.items-table { min-width: 660px; }
+.items-table th, .items-table td { vertical-align: top; }
+.items-table td { padding: 11px 14px 11px 0; }
+.items-table .cell-main { color: var(--ink); font-size: 13.5px; line-height: 1.45; }
+.items-table .cell-sub {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-top: 3px;
+  max-width: 24em;
+}
+.items-table .basis {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+  max-width: 16em;
+}
 
 .tagline-run {
   font-size: 13.5px;

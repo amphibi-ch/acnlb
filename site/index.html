@@ -31,9 +31,10 @@
           <span>CN Legal Bench</span>
         </h1>
         <nav class="mini">
+          <a href="../../tree/HEAD/items/bench10" data-repo-link="items"
+             data-label-en="Item set" data-label-zh="题集">题集</a>
           <a href="../../actions/workflows/run-eval.yml" data-repo-link="workflow">Actions</a>
-          <a href="../../tree/HEAD/items/sample" data-repo-link="items">Sample items</a>
-          <button id="lang-toggle" class="lang" type="button" aria-label="Switch language">中文</button>
+          <button id="lang-toggle" class="lang" type="button" aria-label="Switch language">EN</button>
         </nav>
       </div>
 
@@ -51,17 +52,16 @@
 
       <div class="actions">
         <a class="btn btn-fill" href="../../actions/workflows/run-eval.yml" data-repo-link="workflow"
-           data-lang="en">Run on GitHub</a>
-        <a class="btn btn-fill" href="../../actions/workflows/run-eval.yml" data-repo-link="workflow"
-           data-lang="zh" hidden>在 GitHub 上运行评测</a>
-        <a class="btn btn-line" href="#local" data-lang="en">Run locally</a>
-        <a class="btn btn-line" href="#local" data-lang="zh" hidden>本地运行</a>
+           data-label-en="Run on GitHub Actions" data-label-zh="在 GitHub Actions 上运行">在 GitHub Actions 上运行</a>
+        <a class="btn btn-line" href="#run-local"
+           data-label-en="Run locally" data-label-zh="本地运行">本地运行</a>
       </div>
 
-      <p class="hint" data-lang="en">Left button runs the eval in GitHub Actions — no key needed.
-        Right button gives the same command to run on your own machine.</p>
-      <p class="hint" data-lang="zh" hidden>左边按钮在 GitHub Actions 里跑评测，不需要密钥；
-        右边按钮给出本地运行的同一条命令。</p>
+      <p class="hint" data-lang="en">GitHub Actions needs nothing but a <code>MODEL_API_KEY</code>
+        secret; a local run needs Python 3.11+. Both call the same command —
+        <a href="#run">how to run</a>.</p>
+      <p class="hint" data-lang="zh" hidden>GitHub Actions 只差一个 <code>MODEL_API_KEY</code>
+        secret，本地跑需要 Python 3.11+。两条路调的是同一条命令——详见<a href="#run">怎么跑</a>。</p>
     </section>
 
     <section class="facts" aria-label="At a glance">
@@ -84,28 +84,81 @@
       </div>
     </section>
 
+    <section class="items" id="items">
+      <div class="sec-head">
+        <h2 data-lang="en">Item set</h2>
+        <h2 data-lang="zh" hidden>测评题集</h2>
+        <a class="quiet" href="../../tree/HEAD/items/bench10" data-repo-link="items">items/bench10</a>
+      </div>
+      <p id="items-status" class="muted"></p>
+      <div id="items-body"></div>
+    </section>
+
     <section class="latest" id="latest">
       <div class="sec-head">
         <h2 data-lang="en">Latest published run</h2>
         <h2 data-lang="zh" hidden>最新发布结果</h2>
         <a class="quiet" href="../../blob/HEAD/results/latest.md" data-repo-link="report">full report</a>
       </div>
-      <div id="results-status" class="muted">Loading…</div>
+      <div id="results-status" class="muted"></div>
       <div id="results-body"></div>
     </section>
 
-    <section class="local" id="local">
+    <section class="run" id="run">
       <div class="sec-head">
-        <h2 data-lang="en">Run it locally</h2>
-        <h2 data-lang="zh" hidden>本地运行</h2>
+        <h2 data-lang="en">How to run</h2>
+        <h2 data-lang="zh" hidden>怎么跑</h2>
       </div>
-      <p class="soft" data-lang="en">Bring your own OpenAI-compatible key. The Actions workflow
-        calls the very same command.</p>
-      <p class="soft" data-lang="zh" hidden>自备 OpenAI 兼容密钥。Actions 调用的正是同一条命令。</p>
+      <p class="soft" data-lang="en">Both routes call the same command — the workflow is just CI
+        wrapping the CLI. Nothing has to be installed to read a result: a published run lands in
+        <code>results/latest.json</code> and shows up on this page.</p>
+      <p class="soft" data-lang="zh" hidden>两条路调的是同一条命令，工作流只是替你在 CI 里包了一层
+        CLI；看结果不需要装任何东西——发布的 run 落在 <code>results/latest.json</code>，本页直接显示。</p>
+
+      <div class="run-head">
+        <h3 data-lang="en">① On GitHub Actions</h3>
+        <h3 data-lang="zh" hidden>① 在 GitHub Actions 上</h3>
+      </div>
+      <ol class="steps" data-lang="en">
+        <li>Fork the repo, or push your own clone to GitHub.</li>
+        <li><b>Settings → Secrets and variables → Actions → New repository secret</b>: name
+          <code>MODEL_API_KEY</code>, value your OpenAI-compatible key.</li>
+        <li><b>Actions → run-eval → Run workflow</b>, then fill the inputs: <code>item_path</code>
+          = <code>items/bench10</code>, <code>model</code> = <code>models.example.yaml</code>,
+          <code>judge</code> = <code>manual</code> (or <code>llm</code>), leave
+          <code>publish_results</code> checked.</li>
+        <li>The job validates every item first, scores them, and fails rather than publish a
+          partial run. With <code>publish_results</code> on, it commits
+          <code>results/latest.json</code> and <code>latest.md</code> back to the repo — that is
+          what the section above reads.</li>
+      </ol>
+      <ol class="steps" data-lang="zh" hidden>
+        <li>Fork 本仓库，或把自己的 clone 推上 GitHub。</li>
+        <li><b>Settings → Secrets and variables → Actions → New repository secret</b>：名字填
+          <code>MODEL_API_KEY</code>，值是你的 OpenAI 兼容 key。</li>
+        <li><b>Actions → run-eval → Run workflow</b>，填输入：<code>item_path</code> 填
+          <code>items/bench10</code>，<code>model</code> 填 <code>models.example.yaml</code>，
+          <code>judge</code> 选 <code>manual</code>（或 <code>llm</code>），
+          <code>publish_results</code> 保持勾选。</li>
+        <li>job 先校验全部题目再逐题打分，出现报错就整单失败、不会发布半份结果。勾了
+          <code>publish_results</code> 会把 <code>results/latest.json</code> 与
+          <code>latest.md</code> 提交回仓库——也就是上面那一段读的数据。</li>
+      </ol>
+
+      <div class="run-head" id="run-local">
+        <h3 data-lang="en">② On your machine</h3>
+        <h3 data-lang="zh" hidden>② 在本地</h3>
+      </div>
+      <p class="soft" data-lang="en">Python 3.11+ and an OpenAI-compatible key. Output lands in
+        <code>runs/latest/</code> — <code>results.json</code> for per-item scores,
+        <code>report.md</code> for the readable report.</p>
+      <p class="soft" data-lang="zh" hidden>需要 Python 3.11+ 和一个 OpenAI 兼容 key。结果写在
+        <code>runs/latest/</code>：<code>results.json</code> 是逐题得分，
+        <code>report.md</code> 是可读报告。</p>
       <pre><code>pip install pyyaml
 export MODEL_API_KEY=sk-...
 
-python -m acnlb run --items items/sample \
+python -m acnlb run --items items/bench10 \
   --model models.example.yaml --judge manual</code></pre>
     </section>
 
@@ -114,9 +167,9 @@ python -m acnlb run --items items/sample \
 
 <footer>
   <div class="col">
-    <p data-lang="en">Sample items under <code>items/sample</code> are synthetic. Real matters
-      are added privately. MIT licensed.</p>
-    <p data-lang="zh" hidden><code>items/sample</code> 下的示例题均为合成数据，真实题目私下添加。MIT 许可。</p>
+    <p data-lang="en">Items under <code>items/bench10</code> are synthetic. Real matters are
+      added privately. MIT licensed.</p>
+    <p data-lang="zh" hidden><code>items/bench10</code> 下的题目均为合成数据，真实题目私下添加。MIT 许可。</p>
   </div>
 </footer>
 
