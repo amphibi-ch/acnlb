@@ -323,22 +323,27 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 /* item set — a read-only multi-column table, no interaction */
-.items-table { min-width: 660px; }
+.items-table { min-width: 700px; table-layout: fixed; }
+.items-table col.c-id { width: 15%; }
+.items-table col.c-track { width: 8%; }
+.items-table col.c-task { width: 31%; }
+.items-table col.c-pts { width: 9%; }
+.items-table col.c-docs { width: 8%; }
+.items-table col.c-basis { width: 29%; }
 .items-table th, .items-table td { vertical-align: top; }
 .items-table td { padding: 11px 14px 11px 0; }
+.items-table td.num { white-space: nowrap; }
 .items-table .cell-main { color: var(--ink); font-size: 13.5px; line-height: 1.45; }
 .items-table .cell-sub {
   color: var(--muted);
   font-size: 12.5px;
   line-height: 1.5;
   margin-top: 3px;
-  max-width: 24em;
 }
 .items-table .basis {
   color: var(--muted);
   font-size: 12.5px;
   line-height: 1.6;
-  max-width: 16em;
 }
 
 .tagline-run {

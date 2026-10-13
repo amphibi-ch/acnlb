@@ -107,6 +107,12 @@
   var LANG = "en";
   function t() { return T[LANG]; }
 
+  // Fixed layout: with auto layout the 依据 column (long CJK strings, 1-char
+  // min-content) collapses and wraps one character per line. Widths live in CSS.
+  var ITEM_COLS = "<colgroup>" +
+    '<col class="c-id"><col class="c-track"><col class="c-task">' +
+    '<col class="c-pts"><col class="c-docs"><col class="c-basis"></colgroup>';
+
   function stamp(s) {
     return (s || "").replace("T", " ").slice(0, 16);
   }
@@ -164,7 +170,7 @@
     status.textContent = t().itemsSummary(data);
 
     var table = el("table", "items-table");
-    table.innerHTML = t().itemsHead;
+    table.innerHTML = ITEM_COLS + t().itemsHead;
     var tb = el("tbody");
     data.items.forEach(function (it) {
       var tr = document.createElement("tr");

@@ -17,6 +17,7 @@ on:
       - "site/**"
       - "items/bench10/**"
       - "tools/build_items_index.py"
+      - "tools/stamp_assets.py"
       - "results/latest.json"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
@@ -50,6 +51,10 @@ jobs:
           cp -R site/. _site/
           cp -R results/. _site/results/
           touch _site/.nojekyll
+          # Pages serves assets with max-age=600, so an unchanged app.js URL means
+          # a browser can run yesterday's JS against today's HTML for ten minutes.
+          # Hash-stamp the deployed copy only; site/index.html stays clean.
+          python3 tools/stamp_assets.py _site/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:
