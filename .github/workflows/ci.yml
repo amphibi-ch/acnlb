@@ -1,0 +1,46 @@
+name: ci
+
+# The harness's load-bearing property is determinism: scoring the same
+# (response, rubric, verdicts) twice must be byte-identical. That is cheap to
+# check and expensive to find out late, so it runs on every push and PR.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install pyyaml pytest
+
+      - name: Tests
+        run: python -m pytest tests/ -q
+
+      - name: Validate every published item set
+        run: |
+          set -euo pipefail
+          python -m acnlb validate --items items/sample
+          python -m acnlb validate --items items/bench10
+
+      - name: Scoring is pure — same inputs, byte-identical output
+        run: |
+          set -euo pipefail
+          args="--response items/sample/fixtures/core-tx-0001.good.txt
+                --verdicts items/sample/fixtures/core-tx-0001.good.verdicts.json
+                --rubric items/sample/core-tx-0001.rubric.md"
+          python -m acnlb score $args --json > /tmp/a.json
+          python -m acnlb score $args --json > /tmp/b.json
+          diff /tmp/a.json /tmp/b.json
+          echo "deterministic: $(cat /tmp/a.json)"
