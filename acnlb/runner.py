@@ -177,7 +177,7 @@ def run(
 
         try:
             if responses_dir:
-                rpath = _find_response(responses_dir, item.id)
+                rpath = find_response(responses_dir, item.id)
                 if rpath is None:
                     raise FileNotFoundError(f"no frozen response for {item.id} in {responses_dir}")
                 response = rpath.read_text(encoding="utf-8")
@@ -274,8 +274,12 @@ def run(
     )
 
 
-def _find_response(responses_dir: Path, item_id: str) -> Path | None:
-    """Locate a frozen response for ``item_id``: <id>.txt / .good.txt / .json."""
+def find_response(responses_dir: Path, item_id: str) -> Path | None:
+    """Locate a frozen response for ``item_id``: <id>.txt / .good.txt / .json.
+
+    Public because the answer-file naming is a contract: ``tools/grading_pack.py``
+    has to resolve the same names, and two copies of this list would drift.
+    """
     for name in (f"{item_id}.txt", f"{item_id}.good.txt", f"{item_id}.response.txt",
                  f"{item_id}.response.json", f"{item_id}.json"):
         p = responses_dir / name
