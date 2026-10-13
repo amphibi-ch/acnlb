@@ -1,11 +1,18 @@
 name: deploy-pages
 
-# Publishes the static front door in site/ to GitHub Pages. No build step:
-# site/ is plain HTML/CSS/JS and reads results/latest.json from the repo.
+# Publishes the static front door to GitHub Pages.
+#
+# Pair this with Settings → Pages → Source = "GitHub Actions". Do NOT use
+# "Deploy from a branch": that path runs Jekyll, and because the repo root has
+# no index.html it renders README.md as the homepage instead of this site.
+#
+# No build step — site/ is plain HTML/CSS/JS. It is assembled into _site/
+# together with results/ so the page is served from the site root (/) and
+# app.js still finds its data at /results/latest.json.
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
     paths:
       - "site/**"
       - "results/latest.json"
@@ -30,9 +37,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+
+      - name: Assemble site
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site/results
+          cp -R site/. _site/
+          cp -R results/. _site/results/
+          touch _site/.nojekyll
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          # serve site/ with results/ alongside so app.js can read ../results
-          path: .
+          path: _site
+
       - id: deployment
         uses: actions/deploy-pages@v4

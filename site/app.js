@@ -18,13 +18,15 @@
 
   // Paths inside site/ are static while developing; on Pages they resolve against
   // the repo root. Rewrite them once we know the repo.
+  // "HEAD" instead of a branch name: GitHub resolves it to the default branch,
+  // so the links survive a main/master rename and work from any fork.
   function repoTarget(kind) {
     if (!REPO) return null;
     var base = "https://github.com/" + REPO;
     switch (kind) {
       case "workflow": return base + "/actions/workflows/" + WORKFLOW;
-      case "items": return base + "/tree/main/items/sample";
-      case "report": return base + "/blob/main/results/latest.md";
+      case "items": return base + "/tree/HEAD/items/sample";
+      case "report": return base + "/blob/HEAD/results/latest.md";
       default: return base;
     }
   }
@@ -159,9 +161,20 @@
     }
   }
 
-  function load() {
-    fetch("../results/latest.json", { cache: "no-store" })
+  /* The page is served from the site root on Pages (results/ sits next to it)
+   * and from site/ during local preview (results/ one level up). Try both so the
+   * same file works in either layout. */
+  var RESULT_PATHS = ["results/latest.json", "../results/latest.json"];
+
+  function fetchFirst(paths, i) {
+    if (i >= paths.length) return Promise.reject(new Error("no results"));
+    return fetch(paths[i], { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .catch(function () { return fetchFirst(paths, i + 1); });
+  }
+
+  function load() {
+    fetchFirst(RESULT_PATHS, 0)
       .then(render)
       .catch(function () {
         var s = document.getElementById("results-status");

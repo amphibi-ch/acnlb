@@ -3,48 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>acnlb — a CN legal benchmark you can fork</title>
-<meta name="description" content="A work-product-and-rubric benchmark for Chinese-law model and skill evaluation. Run it in one click on GitHub, or locally with your own key.">
+<title>CN Legal Bench</title>
+<meta name="description" content="A benchmark for Chinese-law tasks: task, documents, gold answer and an atomic rubric per item.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23b9808f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4.4v15M6.6 19.4h10.8M5.2 6.8h13.6M5.2 6.8v2.2M18.8 6.8v2.2'/%3E%3Cpath d='M3 9h4.4l-2.2 3.2z' fill='%23b9808f'/%3E%3Cpath d='M16.6 9h4.4l-2.2 3.2z' fill='%23b9808f'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <svg class="mark-defs" aria-hidden="true" width="0" height="0">
-  <symbol id="burst" viewBox="0 0 24 24">
-    <path d="M12 2.5v19M2.5 12h19M5.2 5.2l13.6 13.6M18.8 5.2L5.2 18.8"
-          fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+  <symbol id="mark" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.7"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4.4v15M6.6 19.4h10.8M5.2 6.8h13.6M5.2 6.8v2.2M18.8 6.8v2.2"/>
+      <path d="M3 9h4.4l-2.2 3.2z"/>
+      <path d="M16.6 9h4.4l-2.2 3.2z"/>
+    </g>
   </symbol>
 </svg>
-
-<header class="topbar">
-  <div class="col">
-    <a class="wordmark" href="#top">
-      <svg class="burst" aria-hidden="true"><use href="#burst"/></svg>
-      <span>acnlb</span>
-    </a>
-    <nav class="topnav">
-      <a href="../../actions/workflows/run-eval.yml" data-repo-link="workflow">Actions</a>
-      <a href="../../tree/main/items/sample" data-repo-link="items">Sample items</a>
-      <button id="lang-toggle" class="lang" type="button" aria-label="Switch language">中文</button>
-    </nav>
-  </div>
-</header>
 
 <main id="top">
   <div class="col">
 
-    <section class="hero">
-      <svg class="burst burst-hero" aria-hidden="true"><use href="#burst"/></svg>
-      <h1 data-lang="en">Score the legal work product, not a multiple-choice answer.</h1>
-      <h1 data-lang="zh" hidden>评测的是法律工作成果，而非选择题答案。</h1>
+    <section class="intro">
+      <div class="brandbar">
+        <h1 class="brand">
+          <svg class="mark" aria-hidden="true"><use href="#mark"/></svg>
+          <span>CN Legal Bench</span>
+        </h1>
+        <nav class="mini">
+          <a href="../../actions/workflows/run-eval.yml" data-repo-link="workflow">Actions</a>
+          <a href="../../tree/HEAD/items/sample" data-repo-link="items">Sample items</a>
+          <button id="lang-toggle" class="lang" type="button" aria-label="Switch language">中文</button>
+        </nav>
+      </div>
 
-      <p class="lede" data-lang="en">
-        A benchmark harness for Chinese-law tasks. Each item ships a task, optional
-        documents, a gold answer, and a rubric of atomic propositions — plus a closed
+      <p class="sub" data-lang="en">
+        A benchmark for Chinese-law tasks. Each item bundles a task, optional
+        documents, a gold answer and a rubric of atomic propositions — plus a closed
         taxonomy for the CN-specific failures: citing repealed law, inventing a
         司法解释, treating a 参考性案例 as binding.
       </p>
-      <p class="lede" data-lang="zh" hidden>
+      <p class="sub" data-lang="zh" hidden>
         面向中文法律任务的评测框架。每道题包含任务、可选附件、参考答案，以及由原子化得分点构成的
         rubric，并配备一套封闭的负分分类体系，专门捕捉中文法律场景特有的失误：引用已废止法律、
         编造司法解释、把参考性案例当作约束性案例。
@@ -52,12 +51,17 @@
 
       <div class="actions">
         <a class="btn btn-fill" href="../../actions/workflows/run-eval.yml" data-repo-link="workflow"
-           data-lang="en">Run the eval on GitHub</a>
+           data-lang="en">Run on GitHub</a>
         <a class="btn btn-fill" href="../../actions/workflows/run-eval.yml" data-repo-link="workflow"
            data-lang="zh" hidden>在 GitHub 上运行评测</a>
-        <a class="btn btn-line" href="#local" data-lang="en">Run it locally</a>
+        <a class="btn btn-line" href="#local" data-lang="en">Run locally</a>
         <a class="btn btn-line" href="#local" data-lang="zh" hidden>本地运行</a>
       </div>
+
+      <p class="hint" data-lang="en">Left button runs the eval in GitHub Actions — no key needed.
+        Right button gives the same command to run on your own machine.</p>
+      <p class="hint" data-lang="zh" hidden>左边按钮在 GitHub Actions 里跑评测，不需要密钥；
+        右边按钮给出本地运行的同一条命令。</p>
     </section>
 
     <section class="facts" aria-label="At a glance">
@@ -84,7 +88,7 @@
       <div class="sec-head">
         <h2 data-lang="en">Latest published run</h2>
         <h2 data-lang="zh" hidden>最新发布结果</h2>
-        <a class="quiet" href="../../blob/main/results/latest.md" data-repo-link="report">full report</a>
+        <a class="quiet" href="../../blob/HEAD/results/latest.md" data-repo-link="report">full report</a>
       </div>
       <div id="results-status" class="muted">Loading…</div>
       <div id="results-body"></div>
