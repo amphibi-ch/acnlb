@@ -39,6 +39,12 @@
 
 * { box-sizing: border-box; }
 
+/* The inactive language is marked with the `hidden` attribute. The UA's
+   [hidden] { display: none } lives in the user-agent origin, so any author
+   `display` declaration (.btn { display: inline-block }, .fact-k { display: block })
+   silently beats it and both languages render at once. Pin it here. */
+[hidden] { display: none !important; }
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
