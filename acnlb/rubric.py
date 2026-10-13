@@ -255,16 +255,20 @@ def render_worksheet(item_id: str, rubric: Rubric, *, response_path: str = "") -
     out.append('{')
     out.append(f'  "item_id": "{item_id}",')
     out.append('  "affirmative": {')
-    for p in rubric.affirmative:
-        out.append(f'    "{_escape_key(p.key)}": true,')
+    out.extend(_json_entries([f'    "{_escape_key(p.key)}": true' for p in rubric.affirmative]))
     out.append('  },')
     out.append('  "negative": {')
-    for n in rubric.negative:
-        out.append(f'    "{_escape_key(n.key)}": 0,')
+    out.extend(_json_entries([f'    "{_escape_key(n.key)}": 0' for n in rubric.negative]))
     out.append('  }')
     out.append('}')
     out.append("```")
     return "\n".join(out)
+
+
+def _json_entries(lines: list[str]) -> list[str]:
+    """Comma between entries only — the block is meant to be pasted and parsed."""
+    last = len(lines) - 1
+    return [line + ("," if i != last else "") for i, line in enumerate(lines)]
 
 
 def _escape_key(s: str) -> str:

@@ -7,6 +7,7 @@ twice must be byte-identical (design doc section 3.8).
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -18,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 from acnlb import negatives  # noqa: E402
 from acnlb.judge import cohens_kappa  # noqa: E402
 from acnlb.retrieval import score_retrieval  # noqa: E402
-from acnlb.rubric import parse_rubric_file, validate_rubric  # noqa: E402
+from acnlb.rubric import parse_rubric_file, render_worksheet, validate_rubric  # noqa: E402
 from acnlb.schema import load_items, validate_item  # noqa: E402
 from acnlb.scorer import canonical_json, score  # noqa: E402
 
@@ -110,3 +111,19 @@ def test_rubric_parser_reads_affirmative_section():
     rubric = parse_rubric_file(SAMPLE / "core-lit-0005.rubric.md")
     assert len(rubric.affirmative) >= 6
     assert rubric.max_positive_points == 9
+
+
+def test_worksheet_verdicts_block_is_valid_json():
+    """Regression: the block a reviewer pastes must parse as-is.
+
+    It used to end every entry with a comma, including the last one, so the
+    worksheet handed out `Illegal trailing comma before end of object`.
+    """
+    for rubric_path in sorted(SAMPLE.glob("*.rubric.md")):
+        rubric = parse_rubric_file(rubric_path)
+        md = render_worksheet(rubric_path.stem, rubric)
+        block = re.search(r"```json\n(.*?)\n```", md, re.S).group(1)
+        verdicts = json.loads(block)  # raises if the trailing comma comes back
+        assert verdicts["item_id"] == rubric_path.stem
+        assert set(verdicts["affirmative"]) == {p.key for p in rubric.affirmative}
+        assert set(verdicts["negative"]) == {n.key for n in rubric.negative}
