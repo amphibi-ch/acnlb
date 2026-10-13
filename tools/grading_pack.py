@@ -10,9 +10,9 @@ It scores nothing and writes no verdicts: a pack is a reading surface.
 
 Run:
     python tools/grading_pack.py --items items/bench10 \
-        --responses runs/local-cli/responses-stripped \
-        --verdicts runs/local-cli/verdicts \
-        --out runs/local-cli/GRADING.md
+        --responses <answers-dir> \
+        --verdicts <verdicts-dir> \
+        --out <answers-dir>/GRADING.md
 """
 from __future__ import annotations
 
@@ -41,6 +41,14 @@ def _clip(worksheet: str) -> str:
     body = body.split("\n## Verdicts file format", 1)[0].rstrip()
     lines = [("#" + ln) if ln.startswith("#") else ln for ln in body.split("\n")]
     return "\n".join(lines)
+
+
+def _shown(path: Path) -> str:
+    """Repo-relative when possible, absolute otherwise — for embedding in docs."""
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
 
 
 def build(items_root: Path, responses_dir: Path, verdicts_dir: Path) -> str:
@@ -74,7 +82,7 @@ def build(items_root: Path, responses_dir: Path, verdicts_dir: Path) -> str:
             )
         )
 
-    out.append("# local-cli × bench10 判分包\n")
+    out.append(f"# {items_root.name} 判分包\n")
     out.append(
         "每道题一节：**题目 → 模型作答 → 判分清单**。判分是把清单里的成立项 `[ ]` 改成 "
         "`[x]`、负分项填 count，然后写回对应 verdicts JSON（key 已预填，只改 true/false 和数字）。\n"
@@ -89,10 +97,11 @@ def build(items_root: Path, responses_dir: Path, verdicts_dir: Path) -> str:
         "不计入上表，判分时别与手工分混在一起。\n"
     )
     out.append(
-        "\n填完 verdicts 后跑：\n\n```bash\n./.venv/bin/python -m acnlb run --items items/bench10 \\\n"
-        "  --model models.local-cli.yaml --judge manual \\\n"
-        "  --responses runs/local-cli/responses-stripped \\\n"
-        "  --verdicts runs/local-cli/verdicts --out runs/latest\n```\n"
+        "\n填完 verdicts 后跑：\n\n```bash\n"
+        f"./.venv/bin/python -m acnlb run --items {items_root.name} \\\n"
+        "  --model models.example.yaml --judge manual \\\n"
+        f"  --responses {_shown(responses_dir)} \\\n"
+        f"  --verdicts {_shown(verdicts_dir)} --out runs/latest\n```\n"
     )
     out.extend(bodies)
     return "\n".join(out) + "\n"

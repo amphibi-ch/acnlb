@@ -5,6 +5,11 @@
 secrets*
 secrets/
 
+# local-only: CLI bridges, per-machine config, anything that is not meant to be
+# published. One directory, so "is this safe to push?" is one look. Nothing
+# under here is tracked — now or at any point in this repo's history.
+local/
+
 # run outputs and the generation cache
 runs/
 !results/

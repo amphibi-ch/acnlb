@@ -10,7 +10,7 @@ make a judgement. ``source`` stays ``"manual"`` — a filled-in file must say wh
 actually graded the answers.
 
 Run:
-    python tools/verdicts_skeleton.py --items items/bench10 --out runs/local-cli/verdicts
+    python tools/verdicts_skeleton.py --items items/bench10 --out runs/verdicts
 """
 from __future__ import annotations
 

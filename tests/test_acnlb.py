@@ -115,7 +115,7 @@ def test_retrieval_matches_a_cjk_numeral_article():
 
     Judgments and 司法解释 write 条 in CJK numerals; the gold set writes Arabic.
     Substring matching scored the first as a miss, so a model that answered
-    correctly — like the local-cli run that prompted this — silently lost the
+    correctly — like the CLI run that prompted this — silently lost the
     point, always in the same direction.
     """
     item = next(i for i in _items() if i.id == "ret-0009")
