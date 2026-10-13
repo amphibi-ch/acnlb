@@ -2,6 +2,12 @@ name: run-eval
 
 # One-click eval: the Pages site deep-links here. This workflow shells out to the
 # SAME CLI users run locally (`python -m acnlb run ...`) — nothing is reimplemented.
+#
+# Needs a MODEL_API_KEY repository secret (Settings → Secrets and variables →
+# Actions → New repository secret). It is never echoed; the job fails early with
+# an explicit error when it is missing. Results are committed by the workflow
+# itself, and pushes made with the workflow token do not re-trigger other
+# workflows, so publishing results cannot loop.
 
 on:
   workflow_dispatch:

@@ -6,6 +6,13 @@ name: deploy-pages
 # "Deploy from a branch": that path runs Jekyll, and because the repo root has
 # no index.html it renders README.md as the homepage instead of this site.
 #
+# If you are enabling Pages from a script instead of Settings, note that Pages
+# must exist before this workflow can deploy — the API call is
+#
+#     gh api -X POST repos/{owner}/{repo}/pages -f build_type=workflow
+#
+# and setting the repo to private turns Pages off (GH Free has no private Pages).
+#
 # No build step — site/ is plain HTML/CSS/JS. It is assembled into _site/
 # together with results/ so the page is served from the site root (/) and
 # app.js still finds its data at /results/latest.json.
