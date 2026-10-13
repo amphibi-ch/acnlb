@@ -63,30 +63,71 @@ def _contains(haystack: str, needle: str) -> bool:
     return _norm(needle) in _norm(haystack)
 
 
-_ARTICLE = re.compile(r"第[0-9〇零一二三四五六七八九十百千]+条")
+_ARTICLE = re.compile(r"第([0-9〇零一二三四五六七八九十百千万]+)条")
+
+_CN_DIGITS = {"〇": 0, "零": 0, "一": 1, "二": 2, "三": 3, "四": 4,
+              "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+_CN_UNITS = {"十": 10, "百": 100, "千": 1000, "万": 10000}
 
 
-def _ref_parts(ref: str) -> list[str]:
-    """Split a gold ref into the mandatory parts that must all appear.
+def article_number(token: str) -> int | None:
+    """Read a 条 number written either way: ``585`` or ``五百八十五``.
 
-    A statute ref like ``《民法典》第585条`` is rarely written contiguously — the
-    law name and the article number land on separate lines. So we require each
-    part to appear somewhere, rather than one contiguous substring. Case refs
-    (``（2021）最高法民申1234号``) stay whole.
+    Judgments and 司法解释 routinely write 条 in CJK numerals while the gold set
+    writes them in Arabic, so 「第五百八十五条」 and 「第585条」 are one article.
+    Scoring the first as a miss punishes a correct answer, which is the worst
+    kind of benchmark error: silent, and always in the same direction. Returns
+    ``None`` for anything that is not a number.
     """
-    m = _ARTICLE.search(ref)
-    if not m:
-        return [ref]
-    article = m.group(0)
-    law = ref[: m.start()]
-    parts = [article]
-    if law.strip("《》　 ()（）"):
-        parts.insert(0, law)
-    return parts
+    token = token.strip()
+    if not token:
+        return None
+    if token.isdigit():
+        return int(token)
+    if any(ch not in _CN_DIGITS and ch not in _CN_UNITS for ch in token):
+        return None
+    total = section = 0
+    digit = 0
+    for ch in token:
+        if ch in _CN_DIGITS:
+            digit = _CN_DIGITS[ch]
+        elif ch == "万":
+            total = (total + section + digit) * 10000
+            section = digit = 0
+        else:
+            section += (digit or 1) * _CN_UNITS[ch]
+            digit = 0
+    return total + section + digit
+
+
+def _articles_in(text: str) -> set[int]:
+    """Every article number mentioned in ``text``, in numeric form."""
+    out: set[int] = set()
+    for m in _ARTICLE.finditer(text):
+        n = article_number(m.group(1))
+        if n is not None:
+            out.add(n)
+    return out
 
 
 def _ref_matches(ref: str, haystack: str) -> bool:
-    return all(_contains(haystack, part) for part in _ref_parts(ref))
+    """Does ``haystack`` surface the gold ``ref``?
+
+    A statute ref like ``《民法典》第585条`` is rarely written contiguously — the
+    law name and the article number usually land on separate lines, and the
+    number may be in CJK numerals. So for statute refs we require the law name
+    somewhere AND the article number in numeric form, rather than one contiguous
+    substring. Case refs (``（2021）最高法民申1234号``) carry no 条 and stay whole.
+    """
+    m = _ARTICLE.search(ref)
+    if m:
+        want = article_number(m.group(1))
+        if want is not None:
+            if want not in _articles_in(haystack):
+                return False
+            law = ref[: m.start()].strip("《》　 ()（）")
+            return not law or _contains(haystack, law)
+    return _contains(haystack, ref)
 
 
 def score_retrieval(
@@ -110,7 +151,7 @@ def score_retrieval(
     for g in gold.gold_items:
         pts = gold.tier_points.get(g.tier, 0.0)
         max_award += pts
-        matched = any(_contains(ref, g.ref) or _ref_matches(g.ref, ref) for ref in surfaced)
+        matched = any(_ref_matches(g.ref, ref) for ref in surfaced)
         if not matched and response_text:
             matched = _ref_matches(g.ref, response_text)
         if matched:

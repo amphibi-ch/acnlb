@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT))
 
 from acnlb import negatives  # noqa: E402
 from acnlb.judge import cohens_kappa  # noqa: E402
-from acnlb.retrieval import score_retrieval  # noqa: E402
+from acnlb.retrieval import article_number, score_retrieval  # noqa: E402
 from acnlb.rubric import parse_rubric_file, render_worksheet, validate_rubric  # noqa: E402
 from acnlb.schema import load_items, validate_item  # noqa: E402
 from acnlb.scorer import canonical_json, score  # noqa: E402
@@ -98,6 +98,45 @@ def test_retrieval_graded_relevance():
     # 高 (2.0) + 低 (0.5) = 2.5
     assert rs.awarded == 2.5
     assert rs.max_awardable == 3.5
+
+
+@pytest.mark.parametrize(
+    "written, want",
+    [("585", 585), ("五百八十五", 585), ("一百零一", 101), ("十", 10),
+     ("二十", 20), ("一千二百三十四", 1234), ("一万", 10000), ("〇", 0),
+     ("abc", None), ("", None)],
+)
+def test_article_number_reads_both_numeral_systems(written, want):
+    assert article_number(written) == want
+
+
+def test_retrieval_matches_a_cjk_numeral_article():
+    """Regression: 「第五百八十五条」 and 「第585条」 are the same article.
+
+    Judgments and 司法解释 write 条 in CJK numerals; the gold set writes Arabic.
+    Substring matching scored the first as a miss, so a model that answered
+    correctly — like the local-cli run that prompted this — silently lost the
+    point, always in the same direction.
+    """
+    item = next(i for i in _items() if i.id == "ret-0009")
+    gold = item.retrieval_gold
+    response = "法律名称：《中华人民共和国民法典》\n条文序号：**第五百八十五条**"
+    rs = score_retrieval(item.id, gold, response_text=response)
+    assert rs.awarded == 2.0
+    assert [m.matched for m in rs.matches] == [True]
+
+
+def test_retrieval_rejects_a_neighbouring_article_or_law():
+    """The numeral fix must not turn the matcher into 'any article will do'."""
+    item = next(i for i in _items() if i.id == "ret-0009")
+    gold = item.retrieval_gold
+    other_article = score_retrieval(
+        item.id, gold, response_text="依据《民法典》第五百八十六条的规定")
+    other_law = score_retrieval(
+        item.id, gold, response_text="依据《刑法》第五百八十五条的规定")
+    for rs in (other_article, other_law):
+        assert rs.awarded == 0.0
+        assert [m.matched for m in rs.matches] == [False]
 
 
 def test_kappa_perfect_and_chance():
