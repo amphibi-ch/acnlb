@@ -10,9 +10,10 @@ model & skill selection and regression testing. It scores the **deliverable** a
 Chinese-law task would require against a rubric of atomic propositions, with a closed
 negative-point taxonomy for the CN-specific failure modes.
 
-> Sample items under `items/sample/` are **SYNTHETIC**. Real matters are added
-> privately — see [items/README.md](items/README.md) and "Point this at your real
-> items" below. Only `items/sample` is public.
+> `items/sample/` (the demo set) and `items/bench10/` are **SYNTHETIC**. Real
+> matters are added privately — see [items/README.md](items/README.md) and "Point
+> this at your real items" below. Those two directories are the only item sets
+> published here.
 
 Design rationale, item schema (§3.3), rubric format (§3.4), the negative-point
 taxonomy (§3.5), and the scoring loop (§3.8) come from
@@ -75,7 +76,7 @@ python -m acnlb score \
 ## Quickstart (local)
 
 ```bash
-git clone <this-repo> && cd acnlb
+git clone https://github.com/amphibi-ch/acnlb.git && cd acnlb
 pip install pyyaml
 export MODEL_API_KEY=sk-...            # your OpenAI-compatible key; never commit it
 export MODEL_BASE_URL=https://api.openai.com/v1   # optional; or set base_url in YAML
@@ -118,9 +119,9 @@ rubric's negative section with the full closed taxonomy. It refuses to overwrite
 unless you pass `--force`, and warns about missing documents. `validate` rejects any
 item whose rubric or gold answer still contains `TODO`.
 
-Then, to keep the items private: put them under a path that is not published (e.g.
-`items/real/`, gitignored or a private submodule), and for Actions point the
-`item_path` input at it from a private checkout or self-hosted runner.
+Then, to keep the items private: put them under `local/` (gitignored), and for
+Actions point the `item_path` input at them from a private checkout or self-hosted
+runner.
 
 There's also a raw-JSON route if you prefer to write it directly — the schema is
 §3.3, the sample items are the reference, and `items/_template.item.json` is a
@@ -131,14 +132,24 @@ path differs. Details: [items/README.md](items/README.md).
 ## Repo layout
 
 ```
-acnlb/       cli, schema, rubric parser, pure scorer, retrieval, judge, runner, model, report
-items/sample/  10 synthetic items + fixtures (the demo set)
-site/       static front door (no build step) — reads results/latest.json
-results/    committed latest.json + latest.md
+acnlb/            cli, schema, rubric parser, pure scorer, retrieval, judge, runner, model, report
+items/sample/     10 synthetic items + fixtures (the demo set)
+items/bench10/    10 synthetic items, no fixtures (the working set)
+site/             static front door (no build step) — reads results/latest.json
+results/          committed latest.json + latest.md
+docs/             item source documents
+notebooks/        quickstart notebook
+local/            NOT IN THE REPO — local-only work, gitignored (see below)
 .github/workflows/  run-eval.yml (dispatch) + deploy-pages.yml
-tools/      make_verdicts.py (regenerates fixture verdicts from rubrics)
-tests/      determinism, relevance, kappa, schema tests
+tools/            build_items_index.py, stamp_assets.py, verdicts_skeleton.py,
+                  grading_pack.py, make_verdicts.py
+tests/            determinism, relevance, kappa, schema tests
 ```
+
+`local/` is where anything unpublished goes — CLI bridges, per-machine config,
+scratch scripts. It is ignored in one line, so "is this safe to push?" is a single
+look rather than a grep. It exists on a maintainer's machine and nowhere else; a
+fresh clone will not have it and nothing in the harness requires it.
 
 ## License
 
