@@ -1,0 +1,23 @@
+{
+  "id": "core-lit-0003",
+  "track": "core",
+  "category": "Litigation",
+  "task_type": "案例分析 (请求权基础)",
+  "task": "以请求权基础方法分析产品致人损害案件的请求权构成与竞合",
+  "prompt": "请就下列产品致人损害案情（详见附件），运用请求权基础（Anspruchsgrundlage）方法，为王某系统检索可能的请求权基础，\n逐一检验构成要件，说明各请求权之间的关系，并给出诉讼策略建议。",
+  "documents": [
+    {
+      "path": "docs/core-lit-0003-water-heater.md"
+    }
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [
+    "《民法典》",
+    "《产品质量法》"
+  ],
+  "gold_answer": "gold/core-lit-0003.md",
+  "rubric": "core-lit-0003.rubric.md",
+  "max_positive_points": 12.0,
+  "notes": "SYNTHETIC — 合成示例；3-pt insight item（三个洞察点全部命中方为满分，各 2 分，此处合并为 3 项高分点）。常见错误：混淆§1202与§1203；称王某只能起诉销售者；主张双重获赔。"
+}

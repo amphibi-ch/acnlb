@@ -1,0 +1,23 @@
+{
+  "id": "core-lit-0005",
+  "track": "core",
+  "category": "Litigation",
+  "task_type": "诉讼文书起草 (起诉状)",
+  "task": "起草一份买卖合同纠纷民事起诉状",
+  "prompt": "请根据所附案情，代原告起草一份民事起诉状，向有管辖权的人民法院提起诉讼，要求符合《民事诉讼法》\n第一百二十四条规定的起诉状记明事项。",
+  "documents": [
+    {
+      "path": "docs/core-lit-0005-sale-dispute.md"
+    }
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [
+    "《民事诉讼法》(2023修正) 第124条",
+    "《民法典》"
+  ],
+  "gold_answer": "gold/core-lit-0005.md",
+  "rubric": "core-lit-0005.rubric.md",
+  "max_positive_points": 11.0,
+  "notes": "SYNTHETIC — 合成示例；素材落库为 docs/，无外部附件（故 has_context=false）。FORMAT_BREACH (length floor)：缺任一法定必备事项，或「事实与理由」部分低于长度下限（300 字），记 FORMAT_BREACH。"
+}

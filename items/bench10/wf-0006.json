@@ -1,0 +1,20 @@
+{
+  "id": "wf-0006",
+  "track": "workflows",
+  "category": "Workflow",
+  "task_type": "要素抽取 (12 fields → JSON)",
+  "task": "从购销合同中抽取 12 个要素并输出固定 schema 的 JSON",
+  "prompt": "请从所附合同中抽取 12 个要素，严格按给定 JSON schema 输出，不得输出 JSON 以外的任何内容。\n合同中未载明的字段，一律填 null，不得推测。\n\nSchema：\n{\n  \"contract_no\": string | null,\n  \"contract_name\": string | null,\n  \"signing_date\": \"YYYY-MM-DD\" | null,\n  \"seller\": string | null,\n  \"buyer\": string | null,\n  \"subject_matter\": string | null,\n  \"quantity\": number | null,\n  \"unit_price_cny\": number | null,\n  \"total_amount_cny\": number | null,\n  \"delivery_deadline\": \"YYYY-MM-DD\" | null,\n  \"payment_terms\": string | null,\n  \"dispute_resolution\": string | null\n}",
+  "documents": [
+    {
+      "path": "docs/wf-0006-equipment-purchase.md"
+    }
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [],
+  "gold_answer": "gold/wf-0006.md",
+  "rubric": "wf-0006.rubric.md",
+  "max_positive_points": 16.0,
+  "notes": "SYNTHETIC — 合成示例；fixed JSON schema；素材落库为 docs/。为考核 HALLUC_FACT，落库版本将删除「合同编号」与签订日期句，对应 gold 值改为 null；模型输出推测值记 HALLUC_FACT。"
+}

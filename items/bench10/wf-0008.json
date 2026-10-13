@@ -1,0 +1,29 @@
+{
+  "id": "wf-0008",
+  "track": "workflows",
+  "category": "Workflow",
+  "task_type": "尽职调查清单",
+  "task": "基于三份文件交叉比对，出具法律尽职调查清单与重点核查事项",
+  "prompt": "你所在的律师团队受托对\"武汉瑞科新能源材料有限公司\"（目标公司）进行法律尽职调查（股权收购项目，\n收购方拟取得 51% 股权）。目前已取得所附三份文件摘录。\n\n请出具：1. 按领域组织的尽职调查清单（列明待核查事项与所需文件）；2. 基于现有三份文件的\n重点风险提示（须包含跨文件交叉比对发现的矛盾点）。",
+  "documents": [
+    {
+      "path": "docs/wf-0008-dd-pack-01.md"
+    },
+    {
+      "path": "docs/wf-0008-dd-pack-02.md"
+    },
+    {
+      "path": "docs/wf-0008-dd-pack-03.md"
+    }
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [
+    "《公司法》(2023修订)",
+    "《民法典》"
+  ],
+  "gold_answer": "gold/wf-0008.md",
+  "rubric": "wf-0008.rubric.md",
+  "max_positive_points": 13.0,
+  "notes": "SYNTHETIC — 合成示例；multi-doc synthesis（核心考点：跨文件矛盾识别，素材落库为 docs/）。仅按文件逐份罗列而未做交叉比对的，得分不超过 50%。未识别担保程序矛盾为一票否决项。"
+}

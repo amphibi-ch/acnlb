@@ -1,0 +1,58 @@
+{
+  "id": "ret-0010",
+  "track": "retrieval",
+  "category": "Retrieval",
+  "task_type": "类案检索",
+  "task": "对赌协议纠纷的类案检索与相关性分级",
+  "prompt": "请阅读所附文件中的\"本案案情\"与 5 个候选案例，逐一判定每个候选案例与本案的相关性等级（高/中/低），\n并简要说明理由。",
+  "documents": [
+    {
+      "path": "docs/ret-0010-candidate-cases.md"
+    }
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [
+    "《公司法》(2023修订)",
+    "《全国法院民商事审判工作会议纪要》(九民纪要) 第5条"
+  ],
+  "gold_answer": "gold/ret-0010.md",
+  "rubric": "ret-0010.rubric.md",
+  "max_positive_points": 9.0,
+  "retrieval_gold": {
+    "class": "similar_case",
+    "gold_items": [
+      {
+        "ref": "（2012）民提字第11号",
+        "tier": "高",
+        "note": "海富案：与股东对赌有效的奠基性裁判"
+      },
+      {
+        "ref": "（2019）苏民再62号",
+        "tier": "高",
+        "note": "华工案：与公司对赌不当然无效，审查履行可能性"
+      },
+      {
+        "ref": "指导案例96号",
+        "tier": "中",
+        "note": "公司回购股权效力，但场景为章程条款"
+      },
+      {
+        "ref": "2018",
+        "tier": "低",
+        "note": "股权转让欺诈案，争点与对赌无关"
+      },
+      {
+        "ref": "2020",
+        "tier": "低",
+        "note": "民间借贷名实之争，争点不同"
+      }
+    ],
+    "tier_points": {
+      "高": 2.0,
+      "中": 1.0,
+      "低": 0.5
+    }
+  },
+  "notes": "SYNTHETIC — 合成示例；graded 高/中/低 relevance（与 gold 分级完全一致的案例占比 ≥80% 为合格）。案例 1、2 判为中或低、或案例 4、5 判为高记分级错误。虚构案例编号或捏造裁判内容记 HALLUC_CITE。该 graded 路径需两名评阅人一致确定层级。"
+}

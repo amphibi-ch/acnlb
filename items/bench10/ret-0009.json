@@ -1,0 +1,33 @@
+{
+  "id": "ret-0009",
+  "track": "retrieval",
+  "category": "Retrieval",
+  "task_type": "法条检索",
+  "task": "检索违约金司法调整规则的现行法条依据",
+  "prompt": "当事人约定的违约金过分高于实际损失，一方请求人民法院予以调减的，现行法律依据是哪一条？\n请直接给出法律名称与条文序号，并摘录关键条文内容。",
+  "documents": [],
+  "has_context": false,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [
+    "《民法典》第585条"
+  ],
+  "gold_answer": "gold/ret-0009.md",
+  "rubric": "ret-0009.rubric.md",
+  "max_positive_points": 5.0,
+  "retrieval_gold": {
+    "class": "statute",
+    "gold_items": [
+      {
+        "ref": "《民法典》第585条",
+        "tier": "高",
+        "note": "违约金司法调减的现行直接依据；binary gold"
+      }
+    ],
+    "tier_points": {
+      "高": 2.0,
+      "中": 1.0,
+      "低": 0.5
+    }
+  },
+  "notes": "SYNTHETIC — 合成示例；binary gold（第585条）：答案命中《民法典》第585条即通过，仅引用已失效的《合同法》第114条记失败（REPEALED_LAW）。同时给出§585与失效条文而未区分效力状态者，按 benchmark 从严口径记 FAIL。"
+}

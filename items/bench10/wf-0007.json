@@ -1,0 +1,22 @@
+{
+  "id": "wf-0007",
+  "track": "workflows",
+  "category": "Workflow",
+  "task_type": "风险点清单 (fixed table)",
+  "task": "将服务合同审查结果输出为固定列结构的风险点表格",
+  "prompt": "你是甲方（委托方）的律师。请审查所附《技术服务合同》摘录，将识别出的风险点输出为一张\nMarkdown 表格，列结构**严格固定**为：\n| 序号 | 条款位置 | 风险描述 | 风险等级(高/中/低) | 法律依据 | 修改建议 |\n除表格外不得输出任何其他文字。无风险的条款不得列入。",
+  "documents": [
+    {
+      "path": "docs/wf-0007-tech-service.md"
+    }
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [
+    "《民法典》"
+  ],
+  "gold_answer": "gold/wf-0007.md",
+  "rubric": "wf-0007.rubric.md",
+  "max_positive_points": 12.0,
+  "notes": "SYNTHETIC — 合成示例；structured output；素材落库为 docs/。列结构、行内容、无表外文字均为机器可评项。站在乙方立场记立场错位；误报良性条款（第三条）记误报。"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "core-tx-0001",
+  "track": "core",
+  "category": "Transaction",
+  "task_type": "合同审查与风险点识别",
+  "task": "审查一份附保证与抵押条款的借款合同，识别重大风险并出具修改意见",
+  "prompt": "你是一家中国律师事务所的执业律师，委托人为出借人（甲方）。请审阅所附《借款合同》全部条款，\n出具签署前审查意见，指出重大风险条款并给出修改建议，援引**现行有效**的法律依据。\n仅得依据合同文本所载事实进行分析，不得推定或虚构任何未载明的事实。",
+  "documents": [
+    {
+      "path": "docs/core-tx-0001-loan-guarantee.md"
+    }
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [
+    "《民法典》",
+    "《公司法》(2023修订)",
+    "《民法典担保制度解释》",
+    "《民间借贷司法解释》(2020第二次修正)"
+  ],
+  "gold_answer": "gold/core-tx-0001.md",
+  "rubric": "core-tx-0001.rubric.md",
+  "max_positive_points": 13.0,
+  "notes": "SYNTHETIC — 合成示例；素材落库为 docs/，prompt 仅留指令。埋雷：引用《担保法》第19条或主张「约定不明按连带责任」（旧规则）记 REPEALED_LAW；引 2018《公司法》第16条未注意 2023 修订后为第15条记半次；编造合同未载明事实记 HALLUC_FACT。原文另有立场错误（站在借款人/保证人立场）记重大缺陷。"
+}

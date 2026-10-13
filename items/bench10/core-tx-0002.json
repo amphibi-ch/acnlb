@@ -1,0 +1,23 @@
+{
+  "id": "core-tx-0002",
+  "track": "core",
+  "category": "Transaction",
+  "task_type": "合同起草 (保密协议)",
+  "task": "为技术尽调场景起草一份双向保密协议",
+  "prompt": "你的客户\"苏州芯睿半导体有限公司\"（披露方/潜在融资方）拟向\"上海澜亭资本管理有限公司\"（接收方/潜在投资方）\n开放技术资料与经营数据供投资尽调。请起草一份《保密协议》，要求：\n1. 对尽调场景有针对性（尽调目的限定、代表与顾问的范围、尽调结束后资料处理）；\n2. 包含商业秘密保护的核心条款；\n3. 可直接作为谈判底稿使用。",
+  "documents": [
+    {
+      "path": "docs/core-tx-0002-deal-context.md"
+    }
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": [
+    "《民法典》",
+    "《反不正当竞争法》(2019修正)"
+  ],
+  "gold_answer": "gold/core-tx-0002.md",
+  "rubric": "core-tx-0002.rubric.md",
+  "max_positive_points": 11.0,
+  "notes": "SYNTHETIC — 合成示例；open-book; Style = N/A（仅评实质要素覆盖，不评文风）。缺失除外情形/目的限定/返还机制任一者记实质缺陷。"
+}
