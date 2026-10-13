@@ -1,0 +1,25 @@
+{
+  "id": "ret-0010",
+  "track": "retrieval",
+  "category": "Retrieval",
+  "task_type": "类案检索",
+  "task": "检索股权转让优先购买权同类案例",
+  "prompt": "请检索与「有限责任公司股东向股东以外的人转让股权、其他股东主张优先购买权」争议焦点相同的类案，并说明每案的案由、争议焦点与裁判规则。请列出案号。",
+  "documents": [],
+  "has_context": false,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《公司法》(2023修订)", "《关于统一法律适用加强类案检索的指导意见(试行)》"],
+  "gold_answer": "gold/ret-0010.md",
+  "rubric": "ret-0010.rubric.md",
+  "max_positive_points": 5,
+  "retrieval_gold": {
+    "class": "similar_case",
+    "gold_items": [
+      {"ref": "（2021）最高法民申1234号", "tier": "高", "note": "争议焦点、案由、裁判规则均吻合"},
+      {"ref": "（2020）京民终5678号", "tier": "中", "note": "案由相同，焦点部分重合"},
+      {"ref": "（2019）沪民初9012号", "tier": "低", "note": "相关但争议焦点不完全一致"}
+    ],
+    "tier_points": {"高": 2.0, "中": 1.0, "低": 0.5}
+  },
+  "notes": "SYNTHETIC — 合成示例，案号为虚构，仅用于演示 §2.6 类案检索的 graded relevance（高/中/低）路径；该 path 需两名评阅人一致确定层级。"
+}

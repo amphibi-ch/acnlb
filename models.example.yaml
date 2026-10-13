@@ -1,0 +1,32 @@
+# acnlb model configuration — OpenAI-compatible endpoints only.
+#
+# Keys are NEVER stored here. Set MODEL_API_KEY in your environment (or use
+# api_key_env to point at a differently-named variable). The GitHub Actions
+# workflow reads the same variable from a repository secret. `.gitignore`
+# excludes *.key, .env, and secrets*.
+#
+# Copy this file to models.yaml, edit, and pass with `--model models.yaml`.
+
+models:
+  - name: gpt-4o-mini
+    model: gpt-4o-mini
+    base_url: https://api.openai.com/v1
+    api_key_env: MODEL_API_KEY
+    temperature: 0.0
+    max_tokens: 4096
+
+  # Any OpenAI-compatible gateway works — a local server, a proxy, an
+  # open-weights host — so long as it speaks POST {base_url}/chat/completions.
+  - name: local-vllm
+    model: Qwen2.5-72B-Instruct
+    base_url: http://localhost:8000/v1
+    api_key_env: MODEL_API_KEY
+    temperature: 0.0
+
+  # A judge model should ideally be a DIFFERENT family from the model under
+  # test (design doc §3.7). Point --judge-model at a config like this one.
+  - name: judge
+    model: gpt-4o
+    base_url: https://api.openai.com/v1
+    api_key_env: MODEL_API_KEY
+    temperature: 0.0

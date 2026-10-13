@@ -1,0 +1,18 @@
+{
+  "id": "core-lit-0005",
+  "track": "core",
+  "category": "Litigation",
+  "task_type": "诉讼文书起草 (起诉状)",
+  "task": "依据案情摘要起草民事起诉状",
+  "prompt": "依据附件《案情摘要》，为原告起草一份民事起诉状。要求：包含诉讼请求、事实与理由、证据清单三部分；全文不少于 600 字；诉讼请求须具体、可执行。",
+  "documents": [
+    {"path": "docs/core-lit-0005-facts.md"}
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《民法典》", "《民事诉讼法》"],
+  "gold_answer": "gold/core-lit-0005.md",
+  "rubric": "core-lit-0005.rubric.md",
+  "max_positive_points": 9,
+  "notes": "SYNTHETIC — 合成示例；用于演示 FORMAT_BREACH（长度下限未满足）负分。"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "ret-0009",
+  "track": "retrieval",
+  "category": "Retrieval",
+  "task_type": "法条检索",
+  "task": "检索违约金司法调减的现行法律依据",
+  "prompt": "请检索并给出：当事人约定的违约金过分高于造成的损失时，法院可以予以调整的现行法律依据。要求：指出法律名称、条文序号，并引述条文的规范内容。",
+  "documents": [],
+  "has_context": false,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《民法典》"],
+  "gold_answer": "gold/ret-0009.md",
+  "rubric": "ret-0009.rubric.md",
+  "max_positive_points": 6,
+  "retrieval_gold": {
+    "class": "statute",
+    "gold_items": [
+      {"ref": "《民法典》第585条", "tier": "高", "note": "违约金调整的现行直接依据"}
+    ],
+    "tier_points": {"高": 2.0, "中": 1.0, "低": 0.5}
+  },
+  "notes": "SYNTHETIC — 合成示例；检索类。gold 为精确条文（第585条），tier 高，评分主体仍走 rubric。"
+}

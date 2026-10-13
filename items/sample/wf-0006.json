@@ -1,0 +1,18 @@
+{
+  "id": "wf-0006",
+  "track": "workflows",
+  "category": "Workflows",
+  "task_type": "要素抽取 (合同字段)",
+  "task": "从合同中抽取 12 个关键字段为固定 JSON",
+  "prompt": "阅读附件《采购合同》，将其关键要素抽取为如下固定 JSON 结构（字段名与类型严格一致），未约定的字段填 null：\n\n{\n  \"contract_name\": \"string\",\n  \"party_a\": \"string\",\n  \"party_b\": \"string\",\n  \"contract_amount_cny\": \"number|null\",\n  \"payment_terms\": \"string|null\",\n  \"delivery_deadline\": \"string|null\",\n  \"warranty_period\": \"string|null\",\n  \"penalty_for_delay\": \"string|null\",\n  \"dispute_resolution\": \"string|null\",\n  \"governing_law\": \"string|null\",\n  \"confidentiality\": \"boolean\",\n  \"effective_date\": \"string|null\"\n}\n\n只输出 JSON，不要额外解释。",
+  "documents": [
+    {"path": "docs/wf-0006-contract.md"}
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《民法典》"],
+  "gold_answer": "gold/wf-0006.md",
+  "rubric": "wf-0006.rubric.md",
+  "max_positive_points": 15,
+  "notes": "SYNTHETIC — 合成示例合同，用于演示固定 JSON 结构化输出与字段级评分。"
+}

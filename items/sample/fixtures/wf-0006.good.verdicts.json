@@ -1,0 +1,25 @@
+{
+  "item_id": "wf-0006",
+  "source": "manual",
+  "affirmative": {
+    "aff:Structure:输出是否为合法 JSON（可被解析），且字段名与要求完全一致？": true,
+    "aff:Structure:所有 12 个字段是否均出现（缺失字段填 null）？": true,
+    "aff:Style:是否仅输出 JSON、未附加解释性文字？": true,
+    "aff:Substance:contract_name 是否为「设备采购合同」？": true,
+    "aff:Substance:party_a 是否为「甲科技有限公司」？": true,
+    "aff:Substance:party_b 是否为「乙设备制造有限公司」？": true,
+    "aff:Substance:contract_amount_cny 是否为 2400000（数值）？": true,
+    "aff:Substance:delivery_deadline 是否为「2024 年 8 月 31 日」或等价日期？": true,
+    "aff:Substance:warranty_period 是否体现「12 个月」？": true,
+    "aff:Substance:penalty_for_delay 是否体现「每逾期一日 0.1% 违约金」？": true,
+    "aff:Substance:dispute_resolution 是否为诉讼/人民法院？": true,
+    "aff:Substance:governing_law 是否为中华人民共和国法律？": true,
+    "aff:Substance:confidentiality 是否为 true（布尔）？": true,
+    "aff:Substance:effective_date 是否体现「签字盖章之日」？": true
+  },
+  "negative": {
+    "neg:HALLUC_FACT:编造合同中没有的金额、当事人或条款": 0,
+    "neg:EXTRATEXT:在 JSON 之外附加的冗余说明文字": 0,
+    "neg:FORMAT_BREACH:输出非合法 JSON 或缺字段导致无法解析": 0
+  }
+}

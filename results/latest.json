@@ -1,0 +1,699 @@
+{
+  "run_id": "sample-fixtures",
+  "model": "gpt-4o-mini",
+  "base_url": "https://api.openai.com/v1",
+  "judge_mode": "manual",
+  "started_at": "2026-10-13T05:50:38+00:00",
+  "versions": {
+    "acnlb": "0.1.0",
+    "protocol": "acnlb-protocol-1",
+    "schema": "acnlb-item-1",
+    "judge_mode": "manual",
+    "judge_model": "",
+    "model_config": "gpt-4o-mini"
+  },
+  "scored_count": 10,
+  "total_count": 10,
+  "notes": [
+    "CROSS-MODEL NOTE: computed from the frozen fixture responses shipped with items/sample, not from a live model call. Illustrative only — no key, no network.",
+    "Sample items are SYNTHETIC."
+  ],
+  "items": [
+    {
+      "item_id": "core-lit-0003",
+      "track": "core",
+      "task_type": "案例分析 (请求权基础)",
+      "has_context": true,
+      "score": 12.0,
+      "max_positive_points": 12.0,
+      "pct": 100.0,
+      "raw_score": 12.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:是否以「请求权基础 / 争议焦点 / 证据薄弱环节」三部分结构呈现？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Structure:是否对争议焦点逐项列明（编号或分项）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Style:是否使用规范的诉讼分析语体（客观、严谨、无口语化表达）？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:3a. 请求权基础:是否指明请求权基础为建设工程施工合同的工程款支付请求权（合同之债）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 请求权基础:是否援引《民法典》合同编关于建设工程合同或合同履行的规定，而非已废止的《合同法》？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 请求权基础:是否指出请求支付逾期利息属于违约损害赔偿/迟延履行的责任？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 争议焦点:是否将「工程质量瑕疵抗辩能否对抗工程款支付义务」列为争议焦点？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3c. 证据与策略:是否指出被告的质量瑕疵抗辩缺乏第三方检测报告等客观证据支撑，举证不能的风险由其承担（这是本案对原告最有利、也最关键的判断）？",
+            "hit": true,
+            "points": 3.0
+          },
+          {
+            "key": "aff:3c. 证据与策略:是否指出原告已持有的验收合格证明是证明履行完毕的关键证据？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": []
+      }
+    },
+    {
+      "item_id": "core-lit-0004",
+      "track": "core",
+      "task_type": "法律检索报告 (数据出境)",
+      "has_context": false,
+      "score": 10.0,
+      "max_positive_points": 10.0,
+      "pct": 100.0,
+      "raw_score": 10.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:是否以检索报告形式呈现（含检索问题、法律依据、结论）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Structure:是否将法律与部门规章/规范性文件分层列明？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Style:是否使用规范的检索报告语体（客观、条理化）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 合规路径:是否指出《个人信息保护法》第 38 条规定的出境路径（安全评估、标准合同、个人信息保护认证）？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:3a. 合规路径:是否说明各路径的适用条件（如安全评估适用于关键信息基础设施运营者、处理个人信息达到规定数量等情形）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 合规路径:是否援引《个人信息保护法》第 38 条作为路径依据？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 效力位阶:是否明确指出《数据出境安全评估办法》属部门规章，而《个人信息保护法》属法律，二者效力位阶不同？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:3b. 效力位阶:是否指出标准合同须向省级网信部门备案后方可出境？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": []
+      }
+    },
+    {
+      "item_id": "core-lit-0005",
+      "track": "core",
+      "task_type": "诉讼文书起草 (起诉状)",
+      "has_context": true,
+      "score": 9.0,
+      "max_positive_points": 9.0,
+      "pct": 100.0,
+      "raw_score": 9.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:是否包含「诉讼请求」「事实与理由」「证据清单」三部分？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Structure:是否载明当事人基本信息（原告、被告、管辖法院）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Style:是否使用规范的起诉状语体（第三人称、客观、无口语化表达）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 诉讼请求:诉讼请求是否具体、可执行（指明本金 40 万元及利息）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 诉讼请求:是否主张被告承担诉讼费用？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 事实与理由:是否完整叙述借贷事实（借款时间、金额、约定还款期、利率、已还部分）？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:3b. 事实与理由:是否援引《民法典》关于借款合同/民间借贷的规定作为法律依据，而非已废止的《合同法》？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3c. 证据:是否列明借条、催告记录等证据？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": []
+      }
+    },
+    {
+      "item_id": "core-tx-0001",
+      "track": "core",
+      "task_type": "合同审查与风险点识别",
+      "has_context": true,
+      "score": 12.0,
+      "max_positive_points": 12.0,
+      "pct": 100.0,
+      "raw_score": 12.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:审查意见是否按「风险等级」或「条款类型」分层呈现？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Structure:是否对每个风险点给出「条款定位 + 风险 + 建议」三段式？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Style:是否使用规范的律师意见书语体（客观、严谨、无口语化表达）？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:3a. 价款与支付:是否指出协议未约定支付进度/尾款条件，采用一次性付款，存在受让方风险？【对照 协议第2.2条】",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 价款与支付:是否指出价款支付与工商变更登记未挂钩（先付款后过户），受让方存在款付而股权未过户的风险？【对照 协议第2.2、2.3条】",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 违约责任:是否指出违约责任仅约定乙方（受让方）逾期付款违约金，未约定甲方违约的救济，双方权利义务不对等？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 违约责任:是否指出未约定「股权瑕疵担保责任」及救济方式？（这是本条最易被忽视的实质风险）",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:3b. 违约责任:是否指出违约金约定（日万分之五）过高时可能触发《民法典》第585条的司法调减？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3c. 决议与程序:是否识别需完成其他股东优先购买权放弃程序？【《公司法》第71条】",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3d. 法律依据:是否援引现行有效的《民法典》合同编及《公司法》(2023修订)作为依据，而非已废止的《合同法》？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": []
+      }
+    },
+    {
+      "item_id": "core-tx-0002",
+      "track": "core",
+      "task_type": "合同起草 (保密协议)",
+      "has_context": false,
+      "score": 9.0,
+      "max_positive_points": 9.0,
+      "pct": 100.0,
+      "raw_score": 9.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:是否以条款要点形式分条呈现（非整段叙述）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Structure:是否明确区分对双方对等的义务（双向保密）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 保密信息定义:是否将保密信息定义为一方以书面或口头方式披露的、标注或合理可识别为保密的信息，并涵盖\"口头披露\"情形？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:3a. 保密信息定义:是否列举保密例外（已公开、接收方独立开发、依法披露）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 使用与期限:是否限定保密信息仅可用于本次交易的评估目的，不得他用？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 使用与期限:是否约定保密期限（如自披露之日起 3–5 年）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3c. 救济与返还:是否约定违约救济（禁令/损害赔偿），并提及违约金可作为救济方式？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3c. 救济与返还:是否约定交易终止或要求时返还或销毁保密信息及其复制件？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": []
+      }
+    },
+    {
+      "item_id": "ret-0009",
+      "track": "retrieval",
+      "task_type": "法条检索",
+      "has_context": false,
+      "score": 8.0,
+      "max_positive_points": 8.0,
+      "pct": 100.0,
+      "raw_score": 8.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:是否给出「法律名称 + 条文序号 + 条文内容」三要素？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Style:是否直接给出检索结果，不附加无关推理？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否准确指向《民法典》第 585 条（违约金过分高于损失的司法调减）？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:Substance:是否引述第 585 条关于「约定的违约金过分高于造成的损失的，人民法院或者仲裁机构可以根据当事人的请求予以适当减少」的规范内容？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否明确该条文为现行有效依据，而非已废止的《合同法》相关条文？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": [],
+        "retrieval": {
+          "item_id": "ret-0009",
+          "class": "statute",
+          "awarded": 2.0,
+          "max_awardable": 2.0,
+          "matches": [
+            {
+              "ref": "《民法典》第585条",
+              "gold_tier": "高",
+              "matched": true,
+              "awarded": 2.0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "item_id": "ret-0010",
+      "track": "retrieval",
+      "task_type": "类案检索",
+      "has_context": false,
+      "score": 8.5,
+      "max_positive_points": 8.5,
+      "pct": 100.0,
+      "raw_score": 8.5,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:是否按「案号 / 案由 / 争议焦点 / 裁判规则」逐案列明？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否说明检索到的类案与本案争议焦点（优先购买权行使）的相似性判断标准？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否提炼出可适用的裁判规则（如未保障优先购买权的转让对第三人的效力）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否援引《公司法》(2023修订) 关于股权对外转让及优先购买权的规定，而非已废止的旧法？",
+            "hit": true,
+            "points": 2.0
+          }
+        ],
+        "negative": [],
+        "retrieval": {
+          "item_id": "ret-0010",
+          "class": "similar_case",
+          "awarded": 3.5,
+          "max_awardable": 3.5,
+          "matches": [
+            {
+              "ref": "（2021）最高法民申1234号",
+              "gold_tier": "高",
+              "matched": true,
+              "awarded": 2.0
+            },
+            {
+              "ref": "（2020）京民终5678号",
+              "gold_tier": "中",
+              "matched": true,
+              "awarded": 1.0
+            },
+            {
+              "ref": "（2019）沪民初9012号",
+              "gold_tier": "低",
+              "matched": true,
+              "awarded": 0.5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "item_id": "wf-0006",
+      "track": "workflows",
+      "task_type": "要素抽取 (合同字段)",
+      "has_context": true,
+      "score": 15.0,
+      "max_positive_points": 15.0,
+      "pct": 100.0,
+      "raw_score": 15.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:输出是否为合法 JSON（可被解析），且字段名与要求完全一致？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:Structure:所有 12 个字段是否均出现（缺失字段填 null）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Style:是否仅输出 JSON、未附加解释性文字？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:contract_name 是否为「设备采购合同」？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:party_a 是否为「甲科技有限公司」？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:party_b 是否为「乙设备制造有限公司」？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:contract_amount_cny 是否为 2400000（数值）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:delivery_deadline 是否为「2024 年 8 月 31 日」或等价日期？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:warranty_period 是否体现「12 个月」？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:penalty_for_delay 是否体现「每逾期一日 0.1% 违约金」？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:dispute_resolution 是否为诉讼/人民法院？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:governing_law 是否为中华人民共和国法律？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:confidentiality 是否为 true（布尔）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:effective_date 是否体现「签字盖章之日」？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": []
+      }
+    },
+    {
+      "item_id": "wf-0007",
+      "track": "workflows",
+      "task_type": "风险点清单 (固定表格)",
+      "has_context": true,
+      "score": 8.0,
+      "max_positive_points": 8.0,
+      "pct": 100.0,
+      "raw_score": 8.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:输出是否为 Markdown 表格，且列名为「条款定位 / 风险等级 / 风险描述 / 建议」？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:Structure:风险等级是否仅使用「高 / 中 / 低」，且按高到低排序？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Style:是否以清单/表格形式输出，无冗余叙述？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否识别「服务内容/标准不明确（口头确认）」的风险？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否识别「费用无单价上限、工时结算」的成本不可控风险？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否识别「知识产权归属未约定」的风险？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Substance:是否识别「违约责任不对等、乙方违约救济缺失」的风险？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": []
+      }
+    },
+    {
+      "item_id": "wf-0008",
+      "track": "workflows",
+      "task_type": "尽职调查清单",
+      "has_context": true,
+      "score": 10.0,
+      "max_positive_points": 10.0,
+      "pct": 100.0,
+      "raw_score": 10.0,
+      "negative_total": 0.0,
+      "error": null,
+      "verdict_source": "manual",
+      "judged_unvalidated": false,
+      "detail": {
+        "affirmative": [
+          {
+            "key": "aff:Structure:是否按维度分组（主体资格 / 重大合同 / 诉讼与合规 / 财务与税务）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Structure:每项是否注明调查要点与关注风险（而非仅列标题）？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:Style:是否以清单形式输出，条理清晰、无口语化表达？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3a. 主体资格:是否识别「丙所持 60% 股权已质押」且「注册资本实缴 300 万、其余认缴未到期」的出资与权属风险？",
+            "hit": true,
+            "points": 2.0
+          },
+          {
+            "key": "aff:3b. 重大合同:是否指出《独家代理协议》含排他条款可能影响收购后业务安排？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 重大合同:是否指出目标公司为借款人的 500 万元《借款合同》尚未清偿？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3b. 重大合同:是否指出未归档的口头框架协议存在权属/义务不清风险？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3c. 诉讼与合规:是否指出未决诉讼（被告 80 万元一案）的或有负债风险？",
+            "hit": true,
+            "points": 1.0
+          },
+          {
+            "key": "aff:3c. 诉讼与合规:是否指出数据处理业务未完成合规评估、个人信息处理需核验的合规风险？",
+            "hit": true,
+            "points": 1.0
+          }
+        ],
+        "negative": []
+      }
+    }
+  ],
+  "per_track": {
+    "core": {
+      "n": 5,
+      "earned": 52.0,
+      "max": 52.0,
+      "scores": [
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0
+      ],
+      "pct": 100.0
+    },
+    "retrieval": {
+      "n": 2,
+      "earned": 16.5,
+      "max": 16.5,
+      "scores": [
+        100.0,
+        100.0
+      ],
+      "pct": 100.0
+    },
+    "workflows": {
+      "n": 3,
+      "earned": 33.0,
+      "max": 33.0,
+      "scores": [
+        100.0,
+        100.0,
+        100.0
+      ],
+      "pct": 100.0
+    }
+  }
+}

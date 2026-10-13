@@ -1,0 +1,16 @@
+{
+  "id": "core-tx-0002",
+  "track": "core",
+  "category": "Transaction",
+  "task_type": "合同起草 (保密协议)",
+  "task": "起草一份用于早期商业洽谈的双向保密协议要点",
+  "prompt": "为两家公司开展早期并购意向洽谈，起草一份双向保密协议（NDA）的核心条款要点。要求涵盖：保密信息定义与例外、保密期限、使用限制、违约救济、以及返还/销毁义务。以条款要点形式输出，无需完整协议文本。",
+  "documents": [],
+  "has_context": false,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《民法典》", "《反不正当竞争法》"],
+  "gold_answer": "gold/core-tx-0002.md",
+  "rubric": "core-tx-0002.rubric.md",
+  "max_positive_points": 9,
+  "notes": "SYNTHETIC — 合成示例，open-book 起草任务（无附件），用于演示 has_context=false 与 Style=N/A 的路径。"
+}

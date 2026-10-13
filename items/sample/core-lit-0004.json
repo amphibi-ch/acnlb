@@ -1,0 +1,16 @@
+{
+  "id": "core-lit-0004",
+  "track": "core",
+  "category": "Litigation",
+  "task_type": "法律检索报告 (数据出境)",
+  "task": "就个人信息出境合规路径出具法律检索报告",
+  "prompt": "某境内公司拟将其收集的用户个人信息传输至境外关联公司用于统一客户管理。请出具一份法律检索报告，说明《个人信息保护法》下个人信息出境的合规路径（安全评估、标准合同、认证）及其适用条件。报告应列明所依据的法律条文，并区分哪些是法律、哪些是部门规章或规范性文件。",
+  "documents": [],
+  "has_context": false,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《个人信息保护法》", "《数据出境安全评估办法》"],
+  "gold_answer": "gold/core-lit-0004.md",
+  "rubric": "core-lit-0004.rubric.md",
+  "max_positive_points": 10,
+  "notes": "SYNTHETIC — 合成示例，open-book 检索任务；用于演示 WRONG_HIERARCHY（部门规章/规范性文件误当法律）负分。"
+}

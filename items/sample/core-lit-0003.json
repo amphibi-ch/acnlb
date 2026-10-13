@@ -1,0 +1,18 @@
+{
+  "id": "core-lit-0003",
+  "track": "core",
+  "category": "Litigation",
+  "task_type": "案例分析 (请求权基础)",
+  "task": "基于判决书片段分析请求权基础并归纳争议焦点",
+  "prompt": "以下为一份合成民事判决书的节选。请以原告代理律师的视角，分析本案的请求权基础（请求权规范），归纳争议焦点，并指出现有证据链的薄弱环节。",
+  "documents": [
+    {"path": "docs/core-lit-0003-judgment.md"}
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《民法典》", "《民事诉讼法》"],
+  "gold_answer": "gold/core-lit-0003.md",
+  "rubric": "core-lit-0003.rubric.md",
+  "max_positive_points": 12,
+  "notes": "SYNTHETIC — 判决书片段为合成示例，非真实案件。用于演示含 3 分 insight 项的 rubric。"
+}

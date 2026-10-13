@@ -1,0 +1,18 @@
+{
+  "id": "core-tx-0001",
+  "track": "core",
+  "category": "Transaction",
+  "task_type": "合同审查与风险点识别",
+  "task": "识别股权转让协议中的重大风险条款并出具审查意见",
+  "prompt": "你是一家中国律师事务所的执业律师。客户（受让方）拟收购某有限责任公司 30% 股权。请审阅附件《股权转让协议》，出具一份审查意见，指出协议中的重大风险条款并给出修改建议。审查意见应分条款定位、风险、建议三段式呈现，并援引现行有效的法律依据。",
+  "documents": [
+    {"path": "docs/core-tx-0001-spa.md"}
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《民法典》", "《公司法》(2023修订)"],
+  "gold_answer": "gold/core-tx-0001.md",
+  "rubric": "core-tx-0001.rubric.md",
+  "max_positive_points": 12,
+  "notes": "SYNTHETIC — 内容为合成示例，非真实交易；用于演示 rubric 格式与负分分类，不可作为真实法律依据。"
+}

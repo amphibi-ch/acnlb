@@ -1,0 +1,20 @@
+{
+  "id": "wf-0008",
+  "track": "workflows",
+  "category": "Workflows",
+  "task_type": "尽职调查清单",
+  "task": "基于三份材料合成股权收购尽职调查清单",
+  "prompt": "附件为拟收购目标公司的三份材料（工商信息、主要合同清单、诉讼情况）。请基于这些材料，出具一份针对本次股权收购的尽职调查清单，按维度分组（主体资格、重大合同、诉讼与合规、财务与税务），每项注明调查要点与关注的风险。",
+  "documents": [
+    {"path": "docs/wf-0008-company.md"},
+    {"path": "docs/wf-0008-contracts.md"},
+    {"path": "docs/wf-0008-litigation.md"}
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《公司法》(2023修订)", "《民法典》"],
+  "gold_answer": "gold/wf-0008.md",
+  "rubric": "wf-0008.rubric.md",
+  "max_positive_points": 10,
+  "notes": "SYNTHETIC — 三份材料均为合成示例，用于演示多文档合成的 workflow 任务。"
+}

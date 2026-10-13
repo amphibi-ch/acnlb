@@ -1,0 +1,18 @@
+{
+  "id": "wf-0007",
+  "track": "workflows",
+  "category": "Workflows",
+  "task_type": "风险点清单 (固定表格)",
+  "task": "输出固定列结构的合同风险点清单",
+  "prompt": "阅读附件《服务合同》，输出一份风险点清单，严格使用如下固定列（Markdown 表格）：\n\n| 条款定位 | 风险等级 | 风险描述 | 建议 |\n\n风险等级只能填：高 / 中 / 低。至少列出 3 个风险点，按风险等级从高到低排序。",
+  "documents": [
+    {"path": "docs/wf-0007-service.md"}
+  ],
+  "has_context": true,
+  "jurisdiction": "CN-mainland",
+  "authority_basis": ["《民法典》"],
+  "gold_answer": "gold/wf-0007.md",
+  "rubric": "wf-0007.rubric.md",
+  "max_positive_points": 8,
+  "notes": "SYNTHETIC — 合成示例，用于演示固定表格结构化输出。"
+}

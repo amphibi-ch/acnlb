@@ -1,0 +1,118 @@
+name: run-eval
+
+# One-click eval: the Pages site deep-links here. This workflow shells out to the
+# SAME CLI users run locally (`python -m acnlb run ...`) — nothing is reimplemented.
+
+on:
+  workflow_dispatch:
+    inputs:
+      item_path:
+        description: "Items directory or single item .json"
+        required: true
+        default: "items/sample"
+      model:
+        description: "Model config file"
+        required: true
+        default: "models.example.yaml"
+      model_name:
+        description: "Named model entry in the config (blank = first)"
+        required: false
+        default: ""
+      judge:
+        description: "Judging mode"
+        required: true
+        type: choice
+        options: [manual, llm]
+        default: manual
+      base_url:
+        description: "Override base_url (blank = use config/env). Do NOT paste a key here."
+        required: false
+        default: ""
+      limit:
+        description: "Score only the first N items (0 = all)"
+        required: false
+        default: "0"
+      publish_results:
+        description: "Commit results/latest.json + latest.md for the Pages site"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install pyyaml
+
+      - name: Validate items
+        run: |
+          if [ -n "${{ inputs.judge }}" ] && [ "${{ inputs.judge }}" = "llm" ]; then
+            echo "llm judge requested"
+          fi
+          python -m acnlb validate --items "${{ inputs.item_path }}"
+
+      - name: Run eval
+        id: run
+        env:
+          MODEL_API_KEY: ${{ secrets.MODEL_API_KEY }}
+          MODEL_BASE_URL: ${{ inputs.base_url }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MODEL_API_KEY:-}" ]; then
+            echo "::error::MODEL_API_KEY secret is not set"; exit 1
+          fi
+          LIMIT="${{ inputs.limit }}"
+          LIMIT_ARG=""
+          if [ -n "$LIMIT" ] && [ "$LIMIT" != "0" ]; then LIMIT_ARG="--limit $LIMIT"; fi
+          python -m acnlb run \
+            --items "${{ inputs.item_path }}" \
+            --model "${{ inputs.model }}" \
+            --model-name "${{ inputs.model_name }}" \
+            --judge "${{ inputs.judge }}" \
+            --out runs/latest \
+            $LIMIT_ARG
+          # Guard: never publish a silent empty run.
+          python - <<'PY'
+          import json, sys
+          d = json.load(open("runs/latest/results.json", encoding="utf-8"))
+          scored = d.get("scored_count", 0)
+          total = d.get("total_count", 0)
+          if scored == 0:
+              print("::error::zero items scored; failing job"); sys.exit(1)
+          if scored < total:
+              print(f"::error::{total - scored} item(s) errored; failing job"); sys.exit(1)
+          print(f"scored {scored}/{total}")
+          PY
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acnlb-run
+          path: runs/latest
+
+      - name: Publish latest results
+        if: ${{ inputs.publish_results }}
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          cp runs/latest/results.json results/latest.json
+          cp runs/latest/report.md results/latest.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add results/latest.json results/latest.md
+          if git diff --cached --quiet; then
+            echo "no change to results"; exit 0
+          fi
+          git commit -m "chore: publish latest acnlb results (${{ inputs.item_path }})"
+          git push

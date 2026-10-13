@@ -1,0 +1,15 @@
+{
+  "item_id": "ret-0010",
+  "source": "manual",
+  "affirmative": {
+    "aff:Structure:是否按「案号 / 案由 / 争议焦点 / 裁判规则」逐案列明？": false,
+    "aff:Substance:是否说明检索到的类案与本案争议焦点（优先购买权行使）的相似性判断标准？": false,
+    "aff:Substance:是否提炼出可适用的裁判规则（如未保障优先购买权的转让对第三人的效力）？": false,
+    "aff:Substance:是否援引《公司法》(2023修订) 关于股权对外转让及优先购买权的规定，而非已废止的旧法？": false
+  },
+  "negative": {
+    "neg:HALLUC_CITE:编造不存在的案号或裁判文书": 0,
+    "neg:WRONG_HIERARCHY:将指导性案例表述为「必须适用」而非「参照适用」": 0,
+    "neg:EXTRATEXT:与本检索问题无关的冗余内容": 0
+  }
+}

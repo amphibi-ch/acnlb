@@ -1,0 +1,18 @@
+{
+  "item_id": "wf-0007",
+  "source": "manual",
+  "affirmative": {
+    "aff:Structure:输出是否为 Markdown 表格，且列名为「条款定位 / 风险等级 / 风险描述 / 建议」？": false,
+    "aff:Structure:风险等级是否仅使用「高 / 中 / 低」，且按高到低排序？": false,
+    "aff:Style:是否以清单/表格形式输出，无冗余叙述？": false,
+    "aff:Substance:是否识别「服务内容/标准不明确（口头确认）」的风险？": false,
+    "aff:Substance:是否识别「费用无单价上限、工时结算」的成本不可控风险？": false,
+    "aff:Substance:是否识别「知识产权归属未约定」的风险？": false,
+    "aff:Substance:是否识别「违约责任不对等、乙方违约救济缺失」的风险？": false
+  },
+  "negative": {
+    "neg:HALLUC_FACT:编造合同中不存在的条款或约定": 0,
+    "neg:EXTRATEXT:表格之外的冗余说明文字": 0,
+    "neg:FORMAT_BREACH:未使用规定的固定列或未限制风险等级取值": 1
+  }
+}
