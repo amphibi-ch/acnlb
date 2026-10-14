@@ -31,7 +31,10 @@ python -m acnlb new --intake my-item.md --out items/real
 ```
 
 `new` writes `<id>.json`, `gold/<id>.md`, and `<id>.rubric.md` (with the negative
-taxonomy pre-filled). Then:
+taxonomy pre-filled). Retrieval items declare their graded gold in a
+`## Retrieval gold` section of the same form — the `retrieval_gold` block is written
+into the JSON for you, and a retrieval item without it is refused up front rather
+than produced and rejected later by `validate`. Then:
 
 1. Write the **gold answer first**, then derive the rubric from it (§3.6) — never the
    reverse.
@@ -50,6 +53,24 @@ taxonomy pre-filled). Then:
 **Raw JSON route** — if you'd rather write the item file directly, copy
 `items/sample/<id>.json` or `items/_template.item.json` (the `_` prefix makes the
 loader skip it) and fill in the §3.3 fields. Everything else is identical.
+
+## Adding an item in the browser
+
+The published site has a form under **新增题目**. It produces the same three files as
+`new`, validates against the same schema, keeps drafts in the browser, and exports a
+zip:
+
+| Action | Result |
+|---|---|
+| fill one item | `<id>.json`, `<id>.rubric.md`, `gold/<id>.md` |
+| paste several intake forms | each becomes a draft row; a new one starts at an `id:` line or after a lone `%%%` line |
+| import local files | `.md` intake forms, raw item `.json`, or a `.bundle.json` downloaded from the site |
+| `Export all (.zip)` | the whole draft, ready to unpack into `items/` |
+
+Nothing is uploaded, and no account is needed. What the form cannot do is commit: the
+site is static and the repo is public, so an item still lands the way any change does —
+a commit by someone with write access, or a pull request a maintainer merges. The
+form's job is to make the files correct before they get that far.
 
 ## Keeping real items private
 

@@ -25,10 +25,58 @@ source of truth and the GitHub Actions workflow shells out to the very same comm
 ## What it measures
 
 Three tracks (`core`, `workflows`, `retrieval`). Each item is a task + optional
-documents + gold answer + rubric. Two ways to run it, same code:
+documents + gold answer + rubric.
+
+## Two ways to run it, same code:
 
 1. **Local CLI** — bring your own OpenAI-compatible key.
 2. **One-click GitHub Actions** — the key comes from a repo secret.
+
+## Just want the item set?
+
+The [site](https://amphibi-ch.github.io/acnlb/) serves the downloads itself, so getting
+the item set does not mean navigating GitHub:
+
+| Download | Unpacks to | Use it for |
+|---|---|---|
+| `acnlb-bench10.zip` | `bench10/` | drop straight into `--items` |
+| `acnlb-workspace.zip` | `acnlb/` | the harness too — runnable without a clone |
+| `acnlb-bench10.bundle.json` | — | every item in one file, rubric + gold inlined |
+| `SHA256SUMS`, `manifest.json` | — | confirm what arrived is what was published |
+
+They are built by `tools/build_bundle.py` at deploy time and are byte-reproducible:
+fixed archive timestamps, sorted entries, no wall-clock in the manifest. CI asserts
+it, so a rebuild that changed nothing produces identical bytes.
+
+```bash
+python tools/build_bundle.py --items items/bench10 --workspace --out _site/download
+cd _site/download && shasum -a 256 -c SHA256SUMS
+```
+
+## Adding an item from the browser
+
+The site has a form. Fill it in, export, and you get **exactly** the three files
+`acnlb new --intake` writes — `<id>.json`, `<id>.rubric.md`, `gold/<id>.md`:
+
+- one item at a time, or paste/import several intake forms at once (a second form
+  starts at an `id:` line, or after a lone `%%%` line);
+- `Export all (.zip)` downloads the whole draft, ready to unpack into `items/`;
+- the export also round-trips: a `.bundle.json` downloaded from the site imports back
+  into the form;
+- drafts live in the browser's `localStorage`; nothing is uploaded and no account is
+  needed.
+
+What it will not do is commit. The site is static and the repo is public, so an item
+still enters the benchmark the way any change does — a commit by someone with write
+access, or a pull request that a maintainer merges. The form's job is to make sure the
+files are right before they get there, which is the part that used to require knowing
+the schema by heart.
+
+Its validation is not a re-typing of the rules. `tools/build_site_schema.py` exports
+the tracks, tiers, negative codes and rubric skeleton out of the package that owns
+them, the page fetches that file, and `tests/test_form_parity.py` runs both the
+JavaScript and the Python on the same input — including all ten shipped rubrics — and
+compares. Code the form accepts, `validate` accepts.
 
 ## Scoring
 
@@ -135,15 +183,16 @@ path differs. Details: [items/README.md](items/README.md).
 acnlb/            cli, schema, rubric parser, pure scorer, retrieval, judge, runner, model, report
 items/sample/     10 synthetic items + fixtures (the demo set)
 items/bench10/    10 synthetic items, no fixtures (the working set)
-site/             static front door (no build step) — reads results/latest.json
+site/             static front door (no build step) — reads results/latest.json,
+                  items.json, schema.json, and download/manifest.json
 results/          committed latest.json + latest.md
 docs/             item source documents
 notebooks/        quickstart notebook
 local/            NOT IN THE REPO — local-only work, gitignored (see below)
-.github/workflows/  run-eval.yml (dispatch) + deploy-pages.yml
-tools/            build_items_index.py, stamp_assets.py, verdicts_skeleton.py,
-                  grading_pack.py, make_verdicts.py
-tests/            determinism, relevance, kappa, schema tests
+.github/workflows/  run-eval.yml (dispatch) + ci.yml + deploy-pages.yml
+tools/            build_items_index.py, build_site_schema.py, build_bundle.py,
+                  stamp_assets.py, verdicts_skeleton.py, grading_pack.py, make_verdicts.py
+tests/            determinism, relevance, kappa, schema, JS/Python form-parity tests
 ```
 
 `local/` is where anything unpublished goes — CLI bridges, per-machine config,
