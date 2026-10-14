@@ -236,6 +236,33 @@ def test_vocab_lists_what_the_set_already_uses() -> None:
     assert set(vocab["task_types"]) == {r["task_type"] for r in bench_raws() if r.get("task_type")}
 
 
+def test_vocab_examples_are_values_the_set_already_contains() -> None:
+    """The form's grey hints come from here, and each one is a *value*, not a
+    description: it is what gets typed if nobody overwrites it.
+
+    A placeholder the set has never used is how the page starts teaching a
+    shape no item has — the same failure as a hand-typed dropdown list, one
+    layer quieter.
+    """
+    raws = bench_raws()
+    ex = build_vocab(raws)["examples"]
+
+    assert ex["task"] in {r["task"] for r in raws}
+    assert ex["authority_basis"] in {a for r in raws for a in r.get("authority_basis") or []}
+    assert ex["documents"] in {d["path"] for r in raws for d in r.get("documents") or []}
+
+    # A placeholder is truncated rather than wrapped, so the shortest task wins.
+    assert len(ex["task"]) == min(len(r["task"]) for r in raws if r.get("task"))
+    # And the authority example carries an article number — the part a drafter
+    # is most likely to leave out.
+    assert any(ch.isdigit() for ch in ex["authority_basis"]), ex
+
+
+def test_vocab_examples_survive_an_empty_set() -> None:
+    """No items, no examples: the form falls back to its own format templates."""
+    assert build_vocab([])["examples"] == {"task": "", "authority_basis": "", "documents": ""}
+
+
 def test_vocab_numbers_each_family_from_the_set() -> None:
     vocab = build_vocab(bench_raws())
     by_prefix = {e["prefix"]: e for e in vocab["id_prefixes"]}

@@ -295,6 +295,28 @@ def test_css_defines_the_classes_the_scripts_assign() -> None:
     assert class_literals(JS_CODE["form-ui.js"]), "scanner found no classes — did the syntax change?"
 
 
+def test_every_text_control_declares_a_hint() -> None:
+    """A box with no example is a box someone fills in wrongly.
+
+    `input()` is the page's only way to build a text field, so the check is on
+    the call: the third argument is the hint, and it is required. What it holds
+    is either a value the published set already uses (`vocab.examples`) or a
+    format template from the copy table — an example no item has used would be
+    the page inventing a spelling, which is the thing `vocab` exists to prevent.
+    """
+    src = JS_CODE["form-ui.js"]
+    seen, missing = 0, []
+    for m in re.finditer(r"\binput\(", src):
+        args = _split_top_level(_balanced(src, m.end() - 1))
+        if not _quoted(args[0]):
+            continue                      # the definition itself, not a call
+        seen += 1
+        if len(args) < 3 or not args[2].strip():
+            missing.append(args[0])
+    assert not missing, f"text controls built with no hint: {missing}"
+    assert seen >= 8, f"only {seen} input() calls found — did the helper change?"
+
+
 def test_language_dicts_have_the_same_keys() -> None:
     """Two hand-written dictionaries, so a missing key is one click from blank text."""
     checked = 0
