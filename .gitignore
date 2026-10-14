@@ -20,6 +20,13 @@ runs/
 !results/latest.json
 !results/latest.md
 
+# built download artifacts: assembled into _site/download at deploy time, so the
+# committed tree holds the generator (tools/build_bundle.py), not its output
+site/download/
+
+# the assembled Pages directory (deploy-pages.yml builds it in CI)
+_site/
+
 # python
 __pycache__/
 *.py[cod]
