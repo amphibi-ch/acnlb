@@ -1,0 +1,157 @@
+name: item-from-issue
+
+# The issue form in .github/ISSUE_TEMPLATE/new-item.yml is the front door for
+# someone who has an item to add and no appetite for cloning the repo. This turns
+# a submission into `items/incoming/<id>.json` + gold answer + rubric on a branch
+# and opens a pull request, so all that is left for a human is reviewing it.
+#
+# Three properties matter more than the feature:
+#
+#   * the default branch is never written to — the item lands on `item/<id>`, and
+#     `items/incoming/` is invisible to the site, to the bundled downloads and to
+#     CI's item list until somebody merges it;
+#   * the issue body reaches the tool through a FILE (`$RUNNER_TEMP/item/body.md`)
+#     and never through the shell, because it is text a stranger typed;
+#   * the id is validated as a path component and attachment paths may not escape
+#     the items directory, in `tools/issue_to_intake.py`.
+#
+# The trigger does not depend on the `new-item` label existing here — GitHub drops
+# labels it does not know — so it keys off the marker that the form's own markdown
+# block puts into every submission.
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: item-from-issue-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  scaffold:
+    if: contains(github.event.issue.body, '<!-- acnlb-item-submission -->')
+    runs-on: ubuntu-latest
+    env:
+      ITEM_SET: items/incoming
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install pyyaml
+
+      - name: Save the issue body
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/item"
+          printf '%s\n' "$ISSUE_BODY" > "$RUNNER_TEMP/item/body.md"
+
+      - name: Turn the form into item files
+        id: scaffold
+        env:
+          LOG: ${{ runner.temp }}/item/scaffold.log
+        run: |
+          set -uo pipefail
+          # `|| code=$?` rather than a pipe: the tool's exit status is the thing we
+          # branch on, and a form it cannot read is a normal outcome, not a crash.
+          code=0
+          python tools/issue_to_intake.py \
+            --body "$RUNNER_TEMP/item/body.md" \
+            --out "$ITEM_SET" \
+            --intake-out "$RUNNER_TEMP/item/intake.md" \
+            --report "$RUNNER_TEMP/item/report.json" > "$LOG" 2>&1 || code=$?
+          cat "$LOG"
+          echo "status=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Ask the author to fix the form
+        if: steps.scaffold.outputs.status != '0' && steps.scaffold.outputs.status != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          {
+            printf '这份表单没能生成题目文件：\n\n```\n'
+            cat "$RUNNER_TEMP/item/scaffold.log"
+            printf '```\n\n改好之后**编辑这个 issue**（不要另开一个），Action 会重新生成。\n'
+          } > "$RUNNER_TEMP/item/comment.md"
+          gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/item/comment.md"
+
+      - name: Check the generated item
+        id: validate
+        if: steps.scaffold.outputs.status == '0'
+        run: |
+          set -uo pipefail
+          code=0
+          python -m acnlb validate --items "$ITEM_SET" \
+            > "$RUNNER_TEMP/item/validate.txt" 2>&1 || code=$?
+          cat "$RUNNER_TEMP/item/validate.txt"
+          echo "status=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update the pull request
+        if: steps.scaffold.outputs.status == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          BASE: ${{ github.event.repository.default_branch }}
+          VALID: ${{ steps.validate.outputs.status == '0' && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          ID=$(jq -r .id "$RUNNER_TEMP/item/report.json")
+          BRANCH="item/$ID"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The branch is rebuilt from the issue on every edit, so a rewrite is the
+          # intended path — fetch first, or --force-with-lease has nothing to check.
+          git fetch --no-tags origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          git checkout -B "$BRANCH"
+          git add "$ITEM_SET"
+          if git diff --cached --quiet; then
+            echo "内容与已合并的一致，没有新改动"
+            gh issue comment "$ISSUE" --body "这次编辑没有产生新改动（$ID 的内容已与 ${BASE} 一致）。"
+            exit 0
+          fi
+          git commit -m "items($ID): scaffold from issue #$ISSUE"
+          git push --force-with-lease origin "$BRANCH"
+
+          BODY="$RUNNER_TEMP/item/pr.md"
+          {
+            printf '来自 issue #%s 的「投稿一道题集」表单，由 Action 生成。\n\n' "$ISSUE"
+            printf '改动：\n\n```\n'
+            git show --stat --format= HEAD
+            printf '```\n\n'
+            printf '## 校验结果\n\n`python -m acnlb validate --items %s`\n\n```\n' "$ITEM_SET"
+            cat "$RUNNER_TEMP/item/validate.txt" 2>/dev/null || true
+            printf '\n```\n\n'
+            if [ "$VALID" != "1" ]; then
+              printf '> 未通过的部分多半是「附件还没提交」或「参考答案/rubric 仍是 TODO」。\n'
+              printf '> 这道题先按草稿 PR 放着：补上附件、填完 rubric，再编辑 issue 重新生成。\n\n'
+            fi
+            printf '## 合并前\n\n'
+            printf -- '- [ ] 附件（`%s/docs/…`）已随本 PR 提交\n' "$ITEM_SET"
+            printf -- '- [ ] 参考答案与 rubric 已填完（`validate` 会拒绝 TODO）\n'
+            printf -- '- [ ] 复核通过后把题目移进目标题集；`items/incoming/` 只是中转站\n'
+            printf -- '- [ ] 若动过 `items/bench10`：`python tools/build_items_index.py --items items/bench10 --out site/items.json`\n'
+          } > "$BODY"
+
+          TITLE="items($ID): 来稿（issue #$ISSUE）"
+          NUM=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // ""')
+          if [ -n "$NUM" ]; then
+            gh pr edit "$NUM" --title "$TITLE" --body-file "$BODY"
+            if [ "$VALID" = "1" ]; then gh pr ready "$NUM" || true; fi
+          elif [ "$VALID" = "1" ]; then
+            gh pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body-file "$BODY"
+          else
+            gh pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body-file "$BODY" --draft
+          fi

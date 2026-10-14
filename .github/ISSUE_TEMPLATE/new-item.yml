@@ -1,0 +1,152 @@
+name: 投稿一道题集
+description: 填完这张表，Action 会把它变成 items/ 下的文件并自动开一个草稿 PR。
+title: "[item] "
+labels: ["new-item"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        <!-- acnlb-item-submission -->
+
+        这张表只做一件事：把你写的东西变成 `items/incoming/<id>.json` + 参考答案 + rubric，
+        并开一个 **草稿 PR**。不写 JSON、不用 clone。
+
+        - 每道题**只提一个 issue**。改了内容就编辑这个 issue，Action 会重新生成同一个 PR。
+        - **附件（`docs/…`）要自己在 PR 里加进去**，表单只能填路径。
+        - 轨道 `retrieval` 必须填「检索基准」段。
+        - 拿不准格式？先看 [items/INTAKE.template.md](../blob/HEAD/items/INTAKE.template.md)
+          和 `items/bench10/` 里已有的题。
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 这是要进 benchmark 的题目（不是提问、不是 bug 报告）
+          required: true
+
+  - type: input
+    id: id
+    attributes:
+      label: 编号 id
+      description: 留空则由 Action 取该题集的下一个可用编号（如 core-tx-0003）
+      placeholder: core-tx-0003
+    validations:
+      required: false
+
+  - type: dropdown
+    id: track
+    attributes:
+      label: 轨道 track
+      description: core = 案例分析／审查／起草；workflows = 固定形态输出；retrieval = 检索
+      options:
+        - core
+        - workflows
+        - retrieval
+    validations:
+      required: true
+
+  - type: input
+    id: category
+    attributes:
+      label: 类别 category
+      description: 已有取值：Litigation / Transaction / Workflow / Retrieval
+      placeholder: Transaction
+    validations:
+      required: false
+
+  - type: input
+    id: task_type
+    attributes:
+      label: 任务类型 task_type
+      description: 沿用线上的写法，如「合同审查与风险点识别」「类案检索」
+      placeholder: 合同审查与风险点识别
+    validations:
+      required: true
+
+  - type: input
+    id: task
+    attributes:
+      label: 任务 task
+      description: 一句话说清这道题考什么
+      placeholder: 审查一份附保证与抵押条款的借款合同，识别重大风险并出具修改意见
+    validations:
+      required: true
+
+  - type: input
+    id: jurisdiction
+    attributes:
+      label: 管辖 jurisdiction
+      description: 目前线上只有 CN-mainland
+      placeholder: CN-mainland
+    validations:
+      required: false
+
+  - type: textarea
+    id: documents
+    attributes:
+      label: 附件路径 documents
+      description: 每行一个，相对 items 目录；新附件要随 PR 一起提交
+      placeholder: |
+        docs/core-tx-0003-loan.md
+    validations:
+      required: false
+
+  - type: input
+    id: authority_basis
+    attributes:
+      label: 法源依据 authority_basis
+      description: 逗号或顿号分隔，能落到条号更好
+      placeholder: 《民法典》第585条, 《民法典担保制度解释》第7条
+    validations:
+      required: false
+
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Prompt
+      description: 模型收到的原话（不是任务描述，是实际发过去的那段）
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: gold
+    attributes:
+      label: 参考答案 gold answer
+      description: 一名胜任律师会产出的回答。**先写它，再写 rubric**（设计文档 §3.6）；顺序反了会锚定在你想得到的点上。留空则写入 TODO 占位。
+    validations:
+      required: false
+
+  - type: textarea
+    id: rubric
+    attributes:
+      label: Rubric
+      description: |
+        §3.4 格式：`### 1. Structure` / `### 2. Style` / `### 3. Substance` 三段，
+        得分行形如 `- 2 pts 是否…？`，负分行必须带封闭代码，如 `- -1 pt  [REPEALED_LAW] 引用已废止法律`。
+        留空则按轨道写入骨架（每行带 TODO，`validate` 在你填完前会拒绝）。
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: retrieval_gold
+    attributes:
+      label: 检索基准（仅 retrieval 轨道）
+      description: |
+        第一行 `class: statute`（或 similar_case / document），其后每行 `层级 | 依据 | 说明`，
+        层级只能是 高 / 中 / 低。例：
+        `- 高 | 《民法典》第585条 | 违约金司法调减的现行直接依据`
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 备注 notes
+      description: 来源、是否合成（合成题请写 SYNTHETIC）、审核人、日期等
+      placeholder: SYNTHETIC — 由 @me 于 2026-10-14 编写
+    validations:
+      required: false
