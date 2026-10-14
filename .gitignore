@@ -10,6 +10,10 @@ secrets/
 # under here is tracked — now or at any point in this repo's history.
 local/
 
+# agent context file. It has to name the vendor in order to forbid naming the
+# vendor, so it is local-only for the same reason local/ is.
+AGENTS.md
+
 # run outputs and the generation cache
 runs/
 !results/
