@@ -15,9 +15,10 @@ import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from .rubric import parse_rubric_text
-from .schema import DEFAULT_TIER_POINTS, VALID_TIERS, Item
+from .schema import DEFAULT_TIER_POINTS, VALID_TIERS, Item, doc_path_problem
 
 _SECTION = re.compile(r"^##\s+(.+?)\s*$")
 _HEADER_LINE = re.compile(r"^([A-Za-z_][A-Za-z0-9_ ]*?)\s*[:：]\s*(.*)$")
@@ -58,6 +59,124 @@ DEFAULT_RUBRIC = """# {item_id} rubric — {task}
 - -0.5 pt [EXTRATEXT] 准确但无关或错误引申的冗余表述
 - -2 pts [FORMAT_BREACH] 未满足明确格式要求（长度下限、必含小节）——如不适用请删除本行
 """
+
+# Per-track rubric templates (design doc §3.4, §3.6). DEFAULT_RUBRIC is the
+# generic skeleton; these are the same skeleton shaped for what each track is
+# graded on, so a drafter who picks the right one does not have to invent the
+# Structure / Style / Substance split from scratch. Every affirmative line
+# carries TODO, for the same reason DEFAULT_RUBRIC does: a template is a draft,
+# and `validate` has to keep refusing it until somebody replaces the prose.
+RUBRIC_TEMPLATES: dict[str, str] = {
+    "core": """# {item_id} rubric — {task}
+
+## Affirmative Points
+
+### 1. Structure (格式与结构)
+- 1 pt  TODO：输出形态，例如「是否按『条款定位 → 风险 → 建议』三段式呈现？」
+
+### 2. Style (风格)
+- 1 pt  TODO：语体与呈现要求，例如「是否以条款清单形式枚举，每条不超过 20 字？」
+
+### 3. Substance (实质)
+#### 3a. 核心命题
+- 2 pts TODO：一个可核验的实质命题，例如「是否指出需完成其他股东优先购买权放弃程序？【《公司法》第71条】」
+- 1 pt  TODO：第二个可核验命题
+
+## Negative Points
+- -1 pt  [HALLUC_FACT] 编造文件/合同里不存在的事实、条款或数字
+- -1 pt  [HALLUC_CITE] 编造不存在的法条、案号、司法解释
+- -1 pt  [REPEALED_LAW] 引用已废止法律（如《合同法》《担保法》）或旧版本条文
+- -0.5 pt [EXTRATEXT] 准确但无关或错误引申的冗余表述
+""",
+    "workflows": """# {item_id} rubric — {task}
+
+## Affirmative Points
+
+### 1. Structure (格式与结构)
+- 2 pts TODO：输出形态，例如「是否严格输出 JSON，且能被 json.loads 解析？」
+
+### 2. Style (风格)
+- 1 pt  TODO：字段与取值要求，例如「键名是否与模板完全一致？」
+
+### 3. Substance (实质)
+#### 3a. 字段正确性
+- 1 pt  TODO：逐字段的可核验命题，例如「party_a 是否取到合同首部的甲方全称？」
+
+## Negative Points
+- -1 pt  [HALLUC_FACT] 编造文件里不存在的字段值
+- -0.5 pt [EXTRATEXT] 输出形态之外的多余解释
+- -2 pts [FORMAT_BREACH] 输出不是要求的固定形态（缺字段、多余包裹文本）——如不适用请删除本行
+""",
+    "retrieval": """# {item_id} rubric — {task}
+
+## Affirmative Points
+
+### 1. Structure (格式与结构)
+- 1 pt  TODO：是否给出法律名称 + 条号（或案号 + 法院）？
+
+### 2. Style (风格)
+- 1 pt  TODO：是否按效力层级分组呈现？
+
+### 3. Substance (实质)
+#### 3a. 依据与分级
+- 2 pts TODO：与「检索基准」逐条对应的可核验命题，例如「是否命中《民法典》第585条？」
+
+## Negative Points
+- -1 pt  [REPEALED_LAW] 引用已废止法律（如《合同法》第114条）
+- -1 pt  [HALLUC_CITE] 编造不存在的法条、案号
+- -1 pt  [WRONG_HIERARCHY] 把参考性案例当指导性案例、地方性文件当司法解释
+""",
+}
+
+
+def rubric_template(track: str) -> str:
+    """The skeleton for ``track``, falling back to the generic one.
+
+    An unrecognised track is not an error here: `validate` rejects the track
+    itself, and refusing to hand back a skeleton would only turn one clear
+    message into two.
+    """
+    return RUBRIC_TEMPLATES.get(track, DEFAULT_RUBRIC)
+
+
+def render_rubric_skeleton(track: str, item_id: str, task: str) -> str:
+    """The skeleton for ``track`` with this item's id and task filled in.
+
+    Both routes that create an item use this — `acnlb new` and the web form — so
+    the same submission gets the same draft whichever way it was made. The form
+    does the substitution in JavaScript from the exported templates; this is the
+    same operation on one string.
+    """
+    return rubric_template(track).replace("{item_id}", item_id).replace("{task}", task)
+
+
+# The rubric format's own vocabulary, as data rather than as format strings
+# sprinkled through the writers. The web form edits a rubric as a table of rows,
+# which means it has to *emit* markdown — and a second set of headings typed into
+# JavaScript is exactly how the two parse differently. So the headings, the level
+# markers and the line shapes live here; the form reads them from `schema.json`
+# and `tests/test_site_contract.py` fails if a heading appears in the JS at all.
+RUBRIC_LAYOUT: dict[str, Any] = {
+    "title": "# {item_id} rubric — {task}",
+    "affirmative_heading": "## Affirmative Points",
+    "negative_heading": "## Negative Points",
+    # Ordered: the form offers them in this order, and the order is the numbering
+    # in the heading text.
+    "sections": [
+        {"key": "structure", "title": "1. Structure (格式与结构)", "section": "Structure"},
+        {"key": "style", "title": "2. Style (风格)", "section": "Style"},
+        {"key": "substance", "title": "3. Substance (实质)", "section": "Substance"},
+    ],
+    "heading_level": "###",
+    "subsection_level": "####",
+    "affirmative_item": "- {points} {unit}  {text}",
+    "negative_item": "- -{points} {unit}  [{code}] {text}",
+    # A section with no points of its own. `parse_rubric_text` reads it as "no
+    # points here" rather than as an unparsed line, which is what keeps a
+    # round trip through the form from inventing a warning.
+    "na": "- N/A",
+    "points": {"one": "pt", "many": "pts"},
+}
 
 
 @dataclass
@@ -200,12 +319,20 @@ def scaffold(
         raise ValueError(f"intake is missing required field(s): {', '.join(missing)}")
     if not intake.prompt.strip():
         raise ValueError("intake is missing a '## Prompt' section")
+    # Document paths are stored in the item and resolved against the items
+    # directory, so they have to stay inside it. Checked before anything is
+    # written: the path is usually something a stranger typed into a form, and a
+    # `../..` that lands in a commit is not something `validate` can undo.
+    for doc in intake.documents:
+        problem = doc_path_problem(doc)
+        if problem:
+            raise ValueError(problem)
 
     task = meta["task"]
     notes = (meta.get("notes", "") + ("\n" + intake.notes if intake.notes else "")).strip()
 
     # Rubric first, so max_positive_points is derived from the real text.
-    rubric_text = intake.rubric or DEFAULT_RUBRIC.replace("{item_id}", iid).replace("{task}", task)
+    rubric_text = intake.rubric or render_rubric_skeleton(meta["track"], iid, task)
     rubric = parse_rubric_text(rubric_text)
 
     has_ctx = _as_bool(meta["has_context"]) if meta.get("has_context") else bool(intake.documents)

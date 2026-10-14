@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -52,6 +53,58 @@ DEFAULT_TIER_POINTS: dict[str, float] = {"高": 2.0, "中": 1.0, "低": 0.5}
 # enforced by from_dict — it is a vocabulary, not a validation rule — but the web
 # form offers exactly these so it cannot invent a fourth.
 RETRIEVAL_CLASSES: tuple[str, ...] = ("statute", "similar_case", "document")
+
+# `id` and every document path end up as paths under the items directory: the id
+# is the item's file name, and `validate` resolves each document against that
+# directory. So both are path components, and both are checked where the value is
+# turned into a path rather than in `Item.from_dict` — the schema deliberately
+# does not constrain the id, because the set may grow a naming scheme nobody
+# anticipated, and a rule that lives in two places is a rule that disagrees with
+# itself.
+ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
+ID_HINT = "<track>-<缩写>-<编号>，如 core-tx-0011"
+
+_ID_RE = re.compile(ID_PATTERN)
+# `.` and `..` match ID_PATTERN and are still not usable names.
+_DOT_NAMES = frozenset({".", ".."})
+_SEPARATORS = re.compile(r"[\\/]+")
+
+
+def id_problem(value: str) -> str:
+    """Why ``value`` cannot be an item id, or ``""`` if it can. Never raises.
+
+    Returning the sentence rather than a bool keeps the caller from inventing its
+    own wording: the CLI, the issue-to-PR tool and the web form all print this.
+    """
+    v = (value or "").strip()
+    if not v:
+        return "id is empty"
+    if v in _DOT_NAMES or not _ID_RE.match(v):
+        return f"id {v!r} is not a usable file name — expected {ID_HINT}"
+    return ""
+
+
+def doc_path_problem(value: str) -> str:
+    """Why ``value`` cannot be a document path, or ``""`` if it can.
+
+    A document is stored in the item as a path relative to the items directory and
+    resolved against it by ``validate``. An absolute path, a drive letter or a
+    ``..`` segment would let one item read a file the set does not own — and the
+    path is usually something a stranger typed into an issue form.
+    """
+    v = (value or "").strip()
+    if not v:
+        return "document path is empty"
+    if v.startswith(("/", "\\")):
+        return f"document path {v!r} is absolute — use a path relative to the items dir"
+    if re.match(r"^[A-Za-z]:", v):
+        return f"document path {v!r} has a drive letter — use a path relative to the items dir"
+    parts = [p for p in _SEPARATORS.split(v) if p]
+    if not parts:
+        return f"document path {v!r} is not a path"
+    if any(p in _DOT_NAMES for p in parts):
+        return f"document path {v!r} escapes the items dir"
+    return ""
 
 
 class SchemaError(ValueError):
