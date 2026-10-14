@@ -66,25 +66,40 @@
       noId: "（未填 id）",
       idNext: "用下一个可用编号",
       idHint: "文件名，只能用字母数字与 . _ -",
+      trackHint: "决定 rubric 骨架，也决定编号前缀",
+      taskHint: "一句话说清要模型做什么",
       unset: "（未选）",
       custom: "自定义…",
-      noVocab: "题集词汇未加载（items.json）：下拉是空的，直接手填即可。",
+      noVocab: "题集词汇未加载（items.json）：下拉是空的，浅色示例也退回成了格式占位。",
       ctxLine: function (n) {
         return "有附件 has_context: " + (n > 0 ? "true" : "false") + "（由附件数量推出，" + n + " 个路径）";
       },
       documents: "附件路径 documents",
       docsHint: "每行一个，相对 items 目录；新附件要随 PR 一起提交",
       docPick: "从已提交的附件里选…",
+      phId: "core-tx-0011",
+      phTask: "简述这道题要模型做什么",
+      phAuthority: "《法律名称》第N条",
+      phDoc: "docs/<id>-<slug>.md",
+      phPrompt: "把模型该收到的原话整段贴进来",
+      phGold: "参考答案的正文",
+      phNotes: "给评审者看的补充说明",
+      phRubric: "按版式手写 rubric",
+      phSub: "可选，如 3a",
+      phPts: "1",
+      phCell: "这一条在说什么",
+      phRetRef: "data/ret/0001/case-01.md",
+      phRetNote: "为什么相关、为什么是这一层级",
       authority: "法源依据 authority_basis",
-      authorityHint: "逗号或顿号分隔；能从已有写法里选就选，能落到条号更好",
+      authorityHint: "逗号或顿号分隔；带上条号更好——浅色示例就是题集里已有的写法",
       notes: "备注 notes", prompt: "Prompt（模型收到的原话）",
       gold: "参考答案 gold answer",
       goldHint: "先写它，再写 rubric（设计稿 §3.6）；留空则写入 TODO 占位",
       rubric: "Rubric",
       startFrom: "起始模板",
       tplClear: "清空 rubric",
-      modeRows: "表格",
-      modeRaw: "原文",
+      modeRows: "表格填写",
+      modeRaw: "Markdown 填写",
       blockedRows: "这份 rubric 无法用表格完整表示，已切到原文模式：",
       sum: function (n) { return "得分上限 " + n; },
       kindAff: "得分点",
@@ -147,25 +162,40 @@
       noId: "(no id)",
       idNext: "Use the next free id",
       idHint: "a file name — letters, digits and . _ - only",
+      trackHint: "sets the rubric skeleton and the id prefix",
+      taskHint: "one line: what the model is being asked to do",
       unset: "(none)",
       custom: "Other…",
-      noVocab: "Item-set vocabulary not loaded (items.json): the lists are empty, just type.",
+      noVocab: "Item-set vocabulary not loaded (items.json): the lists are empty, and the grey examples fell back to format placeholders.",
       ctxLine: function (n) {
         return "has_context: " + (n > 0 ? "true" : "false") + " — derived from the document list (" + n + " path(s))";
       },
       documents: "Document paths",
       docsHint: "one per line, relative to the items dir; new files must be committed too",
       docPick: "Pick a document the set already ships…",
+      phId: "core-tx-0011",
+      phTask: "say in one line what the model has to do",
+      phAuthority: "《Act》 art. N",
+      phDoc: "docs/<id>-<slug>.md",
+      phPrompt: "paste the exact text the model receives",
+      phGold: "the reference answer itself",
+      phNotes: "anything a reviewer should know",
+      phRubric: "hand-write the rubric",
+      phSub: "optional, e.g. 3a",
+      phPts: "1",
+      phCell: "what this line is about",
+      phRetRef: "data/ret/0001/case-01.md",
+      phRetNote: "why it is relevant, and why that tier",
       authority: "authority_basis",
-      authorityHint: "comma separated; prefer a spelling the set already uses, with an article number if you have one",
+      authorityHint: "comma separated; an article number helps — the grey example is a spelling the set already uses",
       notes: "notes", prompt: "Prompt (the exact text the model receives)",
       gold: "Gold answer",
       goldHint: "write it before the rubric (design doc §3.6); left blank, a TODO placeholder is written",
       rubric: "Rubric",
       startFrom: "Start from",
       tplClear: "Clear the rubric",
-      modeRows: "Table",
-      modeRaw: "Markdown",
+      modeRows: "Table editor",
+      modeRaw: "Markdown editor",
       blockedRows: "This rubric cannot be shown as a table without losing a line; using the markdown editor:",
       sum: function (n) { return "ceiling " + n; },
       kindAff: "Affirmative",
@@ -350,12 +380,24 @@
     return f;
   }
 
-  function input(field_, type) {
+  /* Every text control carries a hint, and the hint is a value the set already
+   * contains whenever there is one (`vocab.examples`): a grey 《民事诉讼法》
+   * (2023修正) 第124条 teaches the house style — short title *and* article
+   * number — better than a sentence explaining it. The copy fallbacks below are
+   * format templates, never a value: an example no item has used is how the form
+   * would start inventing a spelling. */
+  function input(field_, type, placeholder) {
     var n = document.createElement(type === "area" ? "textarea" : "input");
     if (type !== "area") n.type = type || "text";
     else n.rows = 8;
     n.setAttribute("data-field", field_);
+    if (placeholder) n.placeholder = placeholder;
     return n;
+  }
+
+  function example(key, fallback) {
+    var ex = (VOCAB && VOCAB.examples) || {};
+    return ex[key] || fallback;
   }
 
   function layout() { return (SCHEMA && SCHEMA.rubric_layout) || null; }
@@ -429,27 +471,6 @@
     return wrap;
   }
 
-  /* A list of known-good values that does not close the field: the browser's own
-   * suggestions, so an existing spelling is one keystroke away without making a
-   * new one impossible. */
-  function datalistField(field_, value, list) {
-    var n = input(field_, "text");
-    n.value = value || "";
-    if (!list.length) return n;
-    var dl = el("datalist");
-    dl.id = "dl-" + field_;
-    list.forEach(function (v) {
-      var o = document.createElement("option");
-      o.value = v;
-      dl.appendChild(o);
-    });
-    n.setAttribute("list", dl.id);
-    var wrap = el("div", "stack");
-    wrap.appendChild(n);
-    wrap.appendChild(dl);
-    return wrap;
-  }
-
   /* ---------- editor ---------- */
 
   function openEditor(row) {
@@ -481,7 +502,23 @@
 
     var grid = el("div", "grid");
 
-    var idNode = input("id", "text");
+    // Track first. It picks the rubric skeleton and the id family, so it is what
+    // makes the suggested id next to it mean anything.
+    var trackSel = document.createElement("select");
+    trackSel.setAttribute("data-field", "track");
+    (SCHEMA ? SCHEMA.valid_tracks : ["core", "workflows", "retrieval"]).forEach(function (t) {
+      var o = document.createElement("option");
+      o.value = t;
+      o.textContent = t + (SCHEMA && SCHEMA.track_labels[t] ? "  ·  " + SCHEMA.track_labels[t] : "");
+      trackSel.appendChild(o);
+    });
+    trackSel.value = row.track;
+    grid.appendChild(field(tx("track"), trackSel, tx("trackHint")));
+
+    // The grey text is the id this row would actually get, so it can be typed in
+    // rather than invented — and it is recomputed with the row's track.
+    var idNode = input("id", "text",
+      F.nextId(VOCAB, { track: row.track, category: row.category }) || tx("phId"));
     idNode.value = row.id || "";
     var idWrap = el("div", "stack");
     idWrap.appendChild(idNode);
@@ -500,20 +537,13 @@
     idWrap.appendChild(idBtn);
     grid.appendChild(field(tx("id"), idWrap, tx("idHint")));
 
-    var trackSel = document.createElement("select");
-    trackSel.setAttribute("data-field", "track");
-    (SCHEMA ? SCHEMA.valid_tracks : ["core", "workflows", "retrieval"]).forEach(function (t) {
-      var o = document.createElement("option");
-      o.value = t;
-      o.textContent = t + (SCHEMA && SCHEMA.track_labels[t] ? "  ·  " + SCHEMA.track_labels[t] : "");
-      trackSel.appendChild(o);
-    });
-    trackSel.value = row.track;
-    grid.appendChild(field(tx("track"), trackSel));
-
-    var taskNode = input("task", "text");
+    // A task is a sentence. One cell of a 200px grid truncates it, so it takes
+    // the whole row.
+    var taskNode = input("task", "text", example("task", tx("phTask")));
     taskNode.value = row.task || "";
-    grid.appendChild(field(tx("task"), taskNode));
+    var taskField = field(tx("task"), taskNode, tx("taskHint"));
+    taskField.className = "field field-wide";
+    grid.appendChild(taskField);
 
     // Everything below is a closed list with an escape hatch, fed by items.json.
     [["category", tx("category"), "categories"],
@@ -530,8 +560,8 @@
     host.appendChild(grid);
 
     var docsWrap = el("div", "stack");
-    var docs = input("documents", "area");
-    docs.rows = 3;
+    var docs = input("documents", "area", example("documents", tx("phDoc")));
+    docs.rows = 2;   // three rows plus a picker under it dwarfed every other field
     docs.value = (row.documents || []).join("\n");
     docsWrap.appendChild(docs);
     if (vocabList("documents").length) {
@@ -558,27 +588,43 @@
     var ctx = el("div", "ctx-line");
     host.appendChild(ctx);
 
-    host.appendChild(field(tx("authority"),
-      datalistField("authority_basis_text", row.authority_basis_text || "", vocabList("authority_basis")),
-      tx("authorityHint")));
+    // Deliberately not a dropdown. A citation is typed, not picked, and the grey
+    // example teaches more than an option list does: it shows the shape — short
+    // title *and* article number — that the published items converge on.
+    var authNode = input("authority_basis_text", "text",
+      example("authority_basis", tx("phAuthority")));
+    authNode.value = row.authority_basis_text || "";
+    host.appendChild(field(tx("authority"), authNode, tx("authorityHint")));
 
-    var promptArea = input("prompt", "area");
+    var promptArea = input("prompt", "area", tx("phPrompt"));
     promptArea.value = row.prompt || "";
     host.appendChild(field(tx("prompt"), promptArea));
 
     host.appendChild(field(tx("gold"), goldArea(row), tx("goldHint")));
 
-    var notesArea = input("notes", "area");
+    var notesArea = input("notes", "area", tx("phNotes"));
     notesArea.rows = 3;
     notesArea.value = row.notes || "";
     host.appendChild(field(tx("notes"), notesArea));
 
-    /* ---- rubric ---- */
-
+    /* ---- rubric ----
+     *
+     * The same text, written two ways, with exactly one of them on screen: the
+     * row tables or the markdown. Both write `row.rubric`, so the export is
+     * identical either way. Showing the markdown *under* the tables is what made
+     * it read as an editable preview of the table above it. */
     var rubricWrap = el("div", "field");
-    var rubricHead = el("div", "field-k");
-    rubricHead.appendChild(document.createTextNode(tx("rubric")));
-    rubricHead.appendChild(document.createTextNode("  "));
+
+    var modeSeg = el("div", "seg");
+    var formBtn = el("button", "seg-btn", tx("modeRows"));
+    var rawBtn = el("button", "seg-btn", tx("modeRaw"));
+    formBtn.type = "button";
+    rawBtn.type = "button";
+    formBtn.addEventListener("click", function () { setRubricMode("rows"); });
+    rawBtn.addEventListener("click", function () { setRubricMode("raw"); });
+    modeSeg.appendChild(formBtn);
+    modeSeg.appendChild(rawBtn);
+
     var tplSel = select(tx("startFrom"),
       ((SCHEMA && SCHEMA.valid_tracks) || []).map(function (t) {
         return { value: t, label: t + (SCHEMA.track_labels[t] ? " · " + SCHEMA.track_labels[t] : "") };
@@ -590,21 +636,12 @@
       if (!v) return;
       applyTemplate(v);
     });
-    rubricHead.appendChild(tplSel);
 
-    var modeBtn = el("button", "link-btn", tx("modeRaw"));
-    modeBtn.type = "button";
-    modeBtn.addEventListener("click", function () {
-      if (RUBRIC_MODE === "raw" && RUBRIC_BLOCKED.length) return;
-      RUBRIC_MODE = RUBRIC_MODE === "raw" ? "rows" : "raw";
-      if (RUBRIC_MODE === "rows") row.rubric = rubricArea.value;
-      saveDraft();
-      renderRubric();
-    });
-    rubricHead.appendChild(document.createTextNode(" "));
-    rubricHead.appendChild(modeBtn);
+    var rubricHead = el("div", "field-k rubric-head-row");
+    rubricHead.appendChild(el("span", null, tx("rubric")));
+    rubricHead.appendChild(modeSeg);
+    rubricHead.appendChild(tplSel);
     var sumSpan = el("span", "field-h", "");
-    rubricHead.appendChild(document.createTextNode("  "));
     rubricHead.appendChild(sumSpan);
     rubricWrap.appendChild(rubricHead);
 
@@ -615,11 +652,13 @@
     var rubricBody = el("div", "rubric-body");
     rubricWrap.appendChild(rubricBody);
 
-    var rubricArea = input("rubric", "area");
+    // Deliberately not appended to `rubricWrap`: the markdown box lives inside
+    // the body, so it is either the editor or absent from the document — never a
+    // second editable box hanging under the table.
+    var rubricArea = input("rubric", "area", tx("phRubric"));
     rubricArea.className = "mono-area";
     rubricArea.rows = 16;
     rubricArea.value = row.rubric || "";
-    rubricWrap.appendChild(rubricArea);
 
     rubricWrap.appendChild(el("span", "field-h",
       (SCHEMA ? SCHEMA.negatives.map(function (n) { return "[" + n.code + "]"; }).join(" ") : "")));
@@ -689,6 +728,19 @@
       return F.fmtPoints(F.parseRubric(row.rubric || "").maxPositivePoints);
     }
 
+    /* One editor at a time. Switching to the tables from the markdown has to
+     * take the textarea's contents with it, and a rubric the row model could not
+     * carry has no tables to go back to — the note above says why, and the
+     * button to return is disabled rather than silently ignored. */
+    function setRubricMode(mode) {
+      if (mode === RUBRIC_MODE) return;
+      if (mode === "rows" && RUBRIC_BLOCKED.length) return;
+      if (RUBRIC_MODE === "raw") row.rubric = rubricArea.value;
+      RUBRIC_MODE = mode;
+      saveDraft();
+      renderRubric();
+    }
+
     function applyTemplate(track) {
       if (track === CLEAR) {
         row.rubric = "";
@@ -730,23 +782,53 @@
       });
     }
 
-    function textCell(value, onChange) {
-      var td = el("td");
+    /* A row cell that grew a scrollbar would hide part of what the drafter
+     * typed, so its height follows its text. Dragging is off for the same
+     * reason it is off in the CSS: a hand-set height is not in the exported
+     * rubric, so it would vanish on the next render anyway.
+     *
+     * `scrollHeight` is content + padding, not the border, and the stylesheet is
+     * `box-sizing: border-box` — so add the border back or the last line ends up
+     * behind a scrollbar. */
+    function autogrow(node) {
+      node.style.height = "auto";
+      if (!node.scrollHeight) return;   // not laid out yet; keep the CSS height
+      var border = node.offsetHeight - node.clientHeight;
+      node.style.height = (node.scrollHeight + (border > 0 ? border : 0)) + "px";
+    }
+
+    /* Only the row tables. The raw-markdown box is a code editor and keeps the
+     * fixed height it was given. */
+    function autogrowAll(container) {
+      var areas = container.querySelectorAll(".rubric-table textarea");
+      for (var i = 0; i < areas.length; i++) autogrow(areas[i]);
+    }
+
+    /* The cells carry a class rather than being found by position, because the
+     * tables have different column counts and the stylesheet has to size the
+     * enum column to its widest option without knowing which table it is in. */
+    function textCell(value, onChange, placeholder, cls) {
+      var td = el("td", cls ? "text-cell " + cls : "text-cell");
       var n = document.createElement("textarea");
       n.rows = 2;
       n.value = value;
-      n.addEventListener("input", function () { onChange(n.value); });
+      if (placeholder) n.placeholder = placeholder;
+      n.addEventListener("input", function () {
+        autogrow(n);
+        onChange(n.value);
+      });
       td.appendChild(n);
       return td;
     }
 
     function pointsCell(r) {
-      var td = el("td");
+      var td = el("td", "pts-cell");
       var n = document.createElement("input");
       n.type = "number";
       n.step = "0.5";
       n.min = "0";
       n.className = "num-input";
+      n.placeholder = tx("phPts");
       n.value = F.fmtPoints(r.points);
       n.addEventListener("input", function () {
         var v = parseFloat(n.value);
@@ -808,7 +890,7 @@
       var rows = mine.map(function (r) {
         var tr = document.createElement("tr");
 
-        var secTd = el("td");
+        var secTd = el("td", "pick-cell");
         var secSel = select(null, ((layout() || {}).sections || []).map(function (s) {
           return { value: s.key, label: s.title };
         }));
@@ -821,9 +903,10 @@
         secTd.appendChild(secSel);
         tr.appendChild(secTd);
 
-        tr.appendChild(textCell(r.subsection || "", function (v) { r.subsection = v; syncRubric(); }));
+        tr.appendChild(textCell(r.subsection || "", function (v) { r.subsection = v; syncRubric(); },
+          tx("phSub"), "sub-cell"));
         tr.appendChild(pointsCell(r));
-        tr.appendChild(textCell(r.text || "", function (v) { r.text = v; syncRubric(); }));
+        tr.appendChild(textCell(r.text || "", function (v) { r.text = v; syncRubric(); }, tx("phCell")));
         tr.appendChild(rowOps(r, renderRubric));
         return tr;
       });
@@ -853,7 +936,7 @@
       var rows = mine.map(function (r) {
         var tr = document.createElement("tr");
 
-        var codeTd = el("td");
+        var codeTd = el("td", "pick-cell");
         var codeSel = select(null, codes.map(function (n) {
           return { value: n.code, label: n.code };
         }));
@@ -866,7 +949,7 @@
         tr.appendChild(codeTd);
 
         tr.appendChild(pointsCell(r));
-        tr.appendChild(textCell(r.text || "", function (v) { r.text = v; syncRubric(); }));
+        tr.appendChild(textCell(r.text || "", function (v) { r.text = v; syncRubric(); }, tx("phCell")));
         tr.appendChild(rowOps(r, renderRubric));
         return tr;
       });
@@ -891,9 +974,14 @@
       if (RUBRIC_BLOCKED.length) RUBRIC_MODE = "raw";
 
       var raw = RUBRIC_MODE === "raw";
-      modeBtn.textContent = raw ? tx("modeRows") : tx("modeRaw");
-      blockNote.hidden = !RUBRIC_BLOCKED.length;
-      blockNote.textContent = RUBRIC_BLOCKED.length ? tx("blockedRows") + RUBRIC_BLOCKED.join("；") : "";
+      var blocked = RUBRIC_BLOCKED.length > 0;
+      formBtn.className = "seg-btn" + (raw ? "" : " is-on");
+      rawBtn.className = "seg-btn" + (raw ? " is-on" : "");
+      formBtn.setAttribute("aria-pressed", raw ? "false" : "true");
+      rawBtn.setAttribute("aria-pressed", raw ? "true" : "false");
+      formBtn.disabled = blocked;
+      blockNote.hidden = !blocked;
+      blockNote.textContent = blocked ? tx("blockedRows") + RUBRIC_BLOCKED.join("；") : "";
       sumSpan.textContent = tx("sum", ceiling());
 
       rubricBody.textContent = "";
@@ -903,6 +991,7 @@
         rubricBody.appendChild(affirmativeBlock());
         rubricBody.appendChild(negativeBlock());
       }
+      autogrowAll(rubricBody);
     }
 
     /* ---- retrieval gold editor ---- */
@@ -917,7 +1006,7 @@
         var rows = items.map(function (g) {
           var tr = document.createElement("tr");
 
-          var tierTd = el("td");
+          var tierTd = el("td", "pick-cell");
           var tierSel = select(null, labelled(tiers));
           tierSel.value = g.tier;
           tierSel.addEventListener("change", function () {
@@ -928,8 +1017,8 @@
           tierTd.appendChild(tierSel);
           tr.appendChild(tierTd);
 
-          tr.appendChild(textCell(g.ref || "", function (v) { g.ref = v; saveDraft(); refresh(); }));
-          tr.appendChild(textCell(g.note || "", function (v) { g.note = v; saveDraft(); refresh(); }));
+          tr.appendChild(textCell(g.ref || "", function (v) { g.ref = v; saveDraft(); refresh(); }, tx("phRetRef")));
+          tr.appendChild(textCell(g.note || "", function (v) { g.note = v; saveDraft(); refresh(); }, tx("phRetNote")));
 
           var ops = el("td", "row-ops");
           var del = el("button", "link-btn", tx("del"));
@@ -959,6 +1048,7 @@
       });
       retBody.appendChild(add);
       retBody.appendChild(el("span", "field-h", tx("retHint") + " " + tiers.join(" / ")));
+      autogrowAll(retBody);
     }
 
     function refresh() {
@@ -1011,7 +1101,7 @@
   }
 
   function goldArea(row) {
-    var a = input("gold", "area");
+    var a = input("gold", "area", tx("phGold"));
     a.value = row.gold || "";
     return a;
   }

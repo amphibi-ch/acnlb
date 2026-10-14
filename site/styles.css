@@ -439,7 +439,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .file-pick { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .file-pick input { max-width: 13em; font-size: 12.5px; }
 
-.builder textarea, .builder input[type="text"], .builder select {
+.builder textarea, .builder input[type="text"], .builder input[type="number"], .builder select {
   font: inherit;
   font-size: 14px;
   color: var(--ink);
@@ -455,6 +455,16 @@ tbody tr:last-child td { border-bottom: 0; }
   font-size: 12.5px;
 }
 .builder input[type="checkbox"] { width: auto; margin: 0; }
+
+/* The hint inside the box. Every text control has one — a value the published
+   set already uses where there is one (`vocab.examples`), a format template
+   otherwise — because a box with no example is a box filled in wrongly. It is
+   deliberately fainter than `--muted` so it never reads as typed content. */
+.builder textarea::placeholder,
+.builder input::placeholder {
+  color: var(--muted);
+  opacity: .62;
+}
 
 .draft-table { min-width: 640px; }
 .draft-table td { vertical-align: middle; }
@@ -504,6 +514,8 @@ tbody tr:last-child td { border-bottom: 0; }
   gap: 12px 16px;
 }
 .field { display: block; margin-bottom: 12px; }
+/* A sentence in a 200px cell is truncated, so `task` takes the whole row. */
+.field-wide { grid-column: 1 / -1; }
 .field-k {
   display: block;
   font-size: 12.5px;
@@ -527,7 +539,43 @@ tbody tr:last-child td { border-bottom: 0; }
 .stack { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
 .stack > select, .stack > input { width: 100%; }
 .picker { max-width: 100%; font-size: 12.5px; }
-.num-input { width: 5.5em; }
+
+/* "Write the rubric as a form" or "write it as markdown" — one or the other,
+   presented as one control rather than a link that toggles a second box into
+   existence below the first. */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--rule-2);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.seg-btn {
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: var(--bg);
+  border: 0;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.seg-btn + .seg-btn { border-left: 1px solid var(--rule-2); }
+.seg-btn.is-on { background: var(--rose-wash); color: var(--rose-deep); font-weight: 600; }
+.seg-btn:disabled { color: var(--muted); cursor: not-allowed; }
+/* The score cells are `<input type="number">`, which the shared rule above did
+   not cover — so they fell back to the browser's own box and spinner and looked
+   like they belonged to a different form. They get the shared shell, stay
+   narrow (`width: 100%` would collapse them in an auto-sized column), and lose
+   the spinner, which nothing else on this page has. */
+.builder input.num-input {
+  width: 5.5em;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.builder input.num-input::-webkit-outer-spin-button,
+.builder input.num-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
 /* `has_context` is derived from the document list, so it is shown, not asked. */
 .ctx-line {
@@ -543,6 +591,21 @@ tbody tr:last-child td { border-bottom: 0; }
 /* The rubric editor: one block per kind, each a table of rows. The same table
    carries the retrieval-gold rows, so the widths are the ones both share —
    first column for the enum, last for the delete button, the rest free. */
+/* The rubric field's own header: the label, the two-way editor switch, the
+   template picker, and the ceiling pushed over to the right. */
+.rubric-head-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.rubric-head-row > .field-h { margin: 0 0 0 auto; }
+/* The shared rule gives every select `width: 100%`, which in a flex row means
+   the whole line — so the template picker pushed the ceiling onto a line of its
+   own. It is a picker, not a field. */
+.rubric-head-row > .picker { width: auto; }
+
 .rubric-body { margin-top: 4px; }
 .rubric-block { margin-bottom: 12px; }
 .rubric-head {
@@ -556,10 +619,27 @@ tbody tr:last-child td { border-bottom: 0; }
 .rubric-table { width: 100%; min-width: 560px; font-size: 12.5px; }
 .rubric-table th, .rubric-table td { padding: 4px 6px; vertical-align: top; }
 .rubric-table th { font-weight: 500; color: var(--muted); text-align: left; }
-.rubric-table textarea { width: 100%; min-height: 2.6em; }
-.rubric-table select { max-width: 14em; }
-.rubric-table td:first-child { width: 12em; }
-.rubric-table td:last-child { width: 3.5em; }
+/* Row cells grow with their text (see `autogrow` in form-ui.js) instead of
+   being dragged by hand: a hand-set height is not part of the exported rubric,
+   so it would be lost on the next render, and a scrollbar here would hide part
+   of what the drafter typed. The raw-markdown box keeps its own fixed height. */
+.rubric-table textarea { width: 100%; min-height: 2.6em; resize: none; overflow: hidden; }
+
+/* Columns sized by their content. The enum column has to show its widest option
+   at any page width — `1. Structure (格式与结构)`, `WRONG_HIERARCHY` — and the
+   score box has to sit against the text it scores rather than floating in
+   whatever the free-text column left over. `width: 1%` on the cells whose
+   neighbours are `auto` is how an auto-layout table is told "as small as your
+   content allows", and `width: auto` on the select lets it size to its widest
+   option instead of being cut off by a fixed cap. */
+.rubric-table td.pick-cell,
+.rubric-table td.pts-cell,
+.rubric-table td.row-ops { width: 1%; white-space: nowrap; }
+.rubric-table td.pick-cell select { width: auto; max-width: none; }
+.rubric-table td.text-cell { width: auto; }
+/* `3a. 核心命题` is short. Left to `auto` it takes half the leftover space from
+   the column that holds the actual text, which is the one that needs it. */
+.rubric-table td.sub-cell { width: 9em; }
 
 .ret-body { margin-top: 4px; }
 .ret-field { border-left: 2px solid var(--rose); padding-left: 14px; }
