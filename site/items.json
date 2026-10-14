@@ -259,6 +259,11 @@
           "wf-0008"
         ]
       }
-    ]
+    ],
+    "examples": {
+      "task": "起草一份买卖合同纠纷民事起诉状",
+      "authority_basis": "《民事诉讼法》(2023修正) 第124条",
+      "documents": "docs/core-lit-0003-water-heater.md"
+    }
   }
 }

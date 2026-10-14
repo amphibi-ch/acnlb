@@ -12,7 +12,8 @@ exist put here". It is *derived*, never hand-typed, and every writer reads the
 same derivation:
 
 * ``tools/build_items_index.py`` publishes it to the site as ``items.json.vocab``,
-  which the web form offers as dropdown and datalist options;
+  which the web form offers as dropdown options and uses for its placeholders
+  (``vocab.examples``);
 * ``tools/issue_to_intake.py`` uses it to assign the next free id when a
   contributor opening an issue leaves the id blank.
 
@@ -62,6 +63,31 @@ def _document_paths(items: Sequence[dict[str, Any]]) -> list[str]:
         for doc in item.get("documents") or []:
             out.append(doc if isinstance(doc, str) else str(doc.get("path", "")))
     return _unique_in_order(out)
+
+
+def _examples(items: Sequence[dict[str, Any]]) -> dict[str, str]:
+    """One real value per field, for the form's placeholders.
+
+    A placeholder is the cheapest documentation a field can carry, and the only
+    honest one is a value the set already contains: `《民法典》第585条` teaches
+    the house style — short title *and* article number, not one or the other —
+    in a way "e.g. a citation" cannot. Hand-writing an example here is how the
+    page would start suggesting a shape no item in the set has.
+
+    The *shortest* task wins because a placeholder is truncated, not wrapped, and
+    a full sentence would be cut mid-word in a single-line input. The authority
+    prefers an entry carrying a number over the alphabetically first one, since
+    the number is the part a drafter is most likely to omit.
+    """
+    tasks = _unique_in_order(item.get("task") or "" for item in items)
+    authorities = _authority_entries(items)
+    documents = _document_paths(items)
+    cited = next((a for a in authorities if any(ch.isdigit() for ch in a)), "")
+    return {
+        "task": min(tasks, key=len) if tasks else "",
+        "authority_basis": cited or (authorities[0] if authorities else ""),
+        "documents": documents[0] if documents else "",
+    }
 
 
 def _id_prefixes(items: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -142,4 +168,5 @@ def build_vocab(items: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "authority_basis": _authority_entries(items),
         "documents": _document_paths(items),
         "id_prefixes": _id_prefixes(items),
+        "examples": _examples(items),
     }
