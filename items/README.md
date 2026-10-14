@@ -30,8 +30,11 @@ cp items/INTAKE.template.md my-item.md      # fill it in
 python -m acnlb new --intake my-item.md --out items/real
 ```
 
-`new` writes `<id>.json`, `gold/<id>.md`, and `<id>.rubric.md` (with the negative
-taxonomy pre-filled). Retrieval items declare their graded gold in a
+`new` writes `<id>.json`, `gold/<id>.md`, and `<id>.rubric.md`. Left blank, the
+rubric gets the skeleton for the track — `core`, `workflows` and `retrieval` are
+shaped differently, because what counts as Structure, Style and Substance is not the
+same when the deliverable is a review, a fixed-form JSON and a search result. The
+negative taxonomy is pre-filled. Retrieval items declare their graded gold in a
 `## Retrieval gold` section of the same form — the `retrieval_gold` block is written
 into the JSON for you, and a retrieval item without it is refused up front rather
 than produced and rejected later by `validate`. Then:
@@ -54,6 +57,35 @@ than produced and rejected later by `validate`. Then:
 `items/sample/<id>.json` or `items/_template.item.json` (the `_` prefix makes the
 loader skip it) and fill in the §3.3 fields. Everything else is identical.
 
+## Adding an item from an issue
+
+**No clone needed: open an issue.** The
+[item form](.github/ISSUE_TEMPLATE/new-item.yml) asks for the same fields as the
+intake form, and an Action turns a submission into files and a draft pull request:
+
+```
+issue  →  items/incoming/<id>.json + <id>.rubric.md + gold/<id>.md  →  draft PR
+```
+
+- **Leave 编号 id blank** and you get the next free number for the track and category
+  you picked, taken from `items/bench10` (`core-tx-0003`, `wf-0009`, `ret-0011`, …).
+  Fill it in and your id is used verbatim.
+- **Attachments still have to be added to the PR by hand** — the form can only carry
+  their paths. A path is checked before anything is written: it must stay inside the
+  items directory, so `/etc/passwd` and `../..` are refused.
+- `items/incoming/` is a staging area. It is not read by the site, by the downloads or
+  by CI's item list; move the item into a real set before it counts.
+- Editing the issue re-runs the Action on the same branch, so the PR is updated rather
+  than duplicated.
+- The PR is opened as a **draft** while `python -m acnlb validate` still fails — which
+  is what a rubric full of `TODO` placeholders does, by design.
+
+To run the same conversion locally:
+
+```bash
+python tools/issue_to_intake.py --body issue.md --out /tmp/x --intake-out /tmp/x.intake.md
+```
+
 ## Adding an item in the browser
 
 The published site has a form under **新增题目**. It produces the same three files as
@@ -66,6 +98,19 @@ zip:
 | paste several intake forms | each becomes a draft row; a new one starts at an `id:` line or after a lone `%%%` line |
 | import local files | `.md` intake forms, raw item `.json`, or a `.bundle.json` downloaded from the site |
 | `Export all (.zip)` | the whole draft, ready to unpack into `items/` |
+
+The fields suggest what the **published set already uses**, read out of
+`site/items.json` (derived by `tools/build_items_index.py`, never typed by hand):
+
+| Field | What the form offers |
+|---|---|
+| `id` | the id pattern, and a button that fills in the next free number for the track + category |
+| `category`, `task_type`, `jurisdiction` | the values the set already uses, plus a free-text escape |
+| `documents` | one path per line, plus a picker of the paths the set already ships |
+| `authority_basis` | a datalist of existing citations |
+| `has_context` | shown, not asked — derived from the document list |
+| rubric | a row editor (section / sub-label / score / text) seeded from the track's template; a rubric the rows cannot carry keeps the raw markdown editor |
+| retrieval gold | a small table, one row per `tier \| ref \| note` |
 
 Nothing is uploaded, and no account is needed. What the form cannot do is commit: the
 site is static and the repo is public, so an item still lands the way any change does —

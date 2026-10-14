@@ -53,6 +53,43 @@ python tools/build_bundle.py --items items/bench10 --workspace --out _site/downl
 cd _site/download && shasum -a 256 -c SHA256SUMS
 ```
 
+## Adding an item from an issue
+
+No clone, no local tooling, no write access: open an issue with the
+[item form](.github/ISSUE_TEMPLATE/new-item.yml), fill in the fields, and an Action
+turns it into files and opens a **draft pull request**.
+
+```
+issue form  →  items/incoming/<id>.json + <id>.rubric.md + gold/<id>.md
+            →  branch item/<id>  →  draft PR
+```
+
+What the Action does, in order:
+
+1. reads the issue body out of a **file** (`$RUNNER_TEMP/item/body.md`), never out of
+   the shell, because it is text a stranger typed;
+2. validates the id and every attachment path as path components — an id of
+   `../../etc/passwd` or an absolute document path is refused before anything is
+   written;
+3. leaves the id blank? It is filled from the published set's own numbering
+   (`items/bench10` → the next `core-tx-…`, `wf-…`, `ret-…`), so a contributor never
+   has to guess a number;
+4. runs `python -m acnlb validate` on what it produced, and posts the output in the
+   PR — **draft** while it fails, ready for review once it passes;
+5. edits to the issue re-run the whole thing on the same branch, so the PR is updated
+   instead of duplicated.
+
+The default branch is never written to, and `items/incoming/` is invisible to the
+site, to the bundled downloads and to CI's item list until somebody moves the item
+into a real set. Attachments still have to be added to the PR by hand — the form can
+only carry their paths.
+
+Locally, the same tool is the debugging path:
+
+```bash
+python tools/issue_to_intake.py --body issue.md --out /tmp/x --intake-out /tmp/x.intake.md
+```
+
 ## Adding an item from the browser
 
 The site has a form. Fill it in, export, and you get **exactly** the three files
@@ -66,17 +103,38 @@ The site has a form. Fill it in, export, and you get **exactly** the three files
 - drafts live in the browser's `localStorage`; nothing is uploaded and no account is
   needed.
 
+The fields are constrained by **what the published set already uses**, not by a list
+someone typed into the page. `tools/build_items_index.py` derives `vocab` from
+`items/bench10` — the categories, task types, jurisdictions, authority citations and
+document paths that exist — and the page offers those as a dropdown or a datalist:
+
+- **id** — a hint, a pattern check, and a button that fills in the next free number
+  for the track and category you picked;
+- **category / task_type / jurisdiction** — a closed list whose last entry hands the
+  field back to you as free text. The schema keeps these fields free strings on
+  purpose, so the list is a suggestion that stops `合同审查` / `合同审核` /
+  `contract review` becoming three task types no report can group by;
+- **documents** — one per line, plus a picker of the paths the set already ships;
+- **authority_basis** — a datalist of existing citations, with an article number
+  where you have one;
+- **has_context** — not asked. It is derived from the document list and shown
+  read-only, because a checkbox beside that list is a second source of truth that can
+  only disagree with it;
+- **rubric** — a row editor (one row per point: section, sub-label, score, text) fed
+  by per-track templates in `acnlb/scaffold.py`. A rubric the rows cannot carry line
+  for line keeps the raw markdown editor instead, rather than being quietly trimmed;
+- **retrieval gold** — a small table, one row per `tier | ref | note`.
+
 What it will not do is commit. The site is static and the repo is public, so an item
 still enters the benchmark the way any change does — a commit by someone with write
-access, or a pull request that a maintainer merges. The form's job is to make sure the
-files are right before they get there, which is the part that used to require knowing
-the schema by heart.
+access, or a pull request that a maintainer merges.
 
 Its validation is not a re-typing of the rules. `tools/build_site_schema.py` exports
-the tracks, tiers, negative codes and rubric skeleton out of the package that owns
-them, the page fetches that file, and `tests/test_form_parity.py` runs both the
-JavaScript and the Python on the same input — including all ten shipped rubrics — and
-compares. Code the form accepts, `validate` accepts.
+the tracks, tiers, negative codes, rubric skeleton and per-track templates out of the
+package that owns them, the page fetches that file, and `tests/test_form_parity.py`
+runs both the JavaScript and the Python on the same input — all ten shipped rubrics,
+the id and path rules, and the next-free-id answer — and compares. Code the form
+accepts, `validate` accepts.
 
 ## Scoring
 
@@ -180,19 +238,24 @@ path differs. Details: [items/README.md](items/README.md).
 ## Repo layout
 
 ```
-acnlb/            cli, schema, rubric parser, pure scorer, retrieval, judge, runner, model, report
+acnlb/            cli, schema, rubric parser, pure scorer, retrieval, judge, runner, model, report,
+                  scaffold (intake → files), vocab (suggestions derived from the item set)
 items/sample/     10 synthetic items + fixtures (the demo set)
 items/bench10/    10 synthetic items, no fixtures (the working set)
+items/incoming/   staging area for issue submissions — not a published set; move the
+                  item into items/bench10 (or your real set) to make it count
 site/             static front door (no build step) — reads results/latest.json,
                   items.json, schema.json, and download/manifest.json
 results/          committed latest.json + latest.md
 docs/             item source documents
 notebooks/        quickstart notebook
 local/            NOT IN THE REPO — local-only work, gitignored (see below)
-.github/workflows/  run-eval.yml (dispatch) + ci.yml + deploy-pages.yml
-tools/            build_items_index.py, build_site_schema.py, build_bundle.py,
-                  stamp_assets.py, verdicts_skeleton.py, grading_pack.py, make_verdicts.py
-tests/            determinism, relevance, kappa, schema, JS/Python form-parity tests
+.github/          workflows (run-eval, ci, deploy-pages, item-from-issue)
+                  + ISSUE_TEMPLATE/new-item.yml (the submission form)
+tools/            build_items_index.py, build_site_schema.py, build_bundle.py, issue_to_intake.py,
+                  preview_site.py, stamp_assets.py, verdicts_skeleton.py, grading_pack.py, make_verdicts.py
+tests/            determinism, relevance, kappa, schema, intake scaffolding, item authoring,
+                  issue→item conversion, site contract, and JS/Python form-parity tests
 ```
 
 `local/` is where anything unpublished goes — CLI bridges, per-machine config,
