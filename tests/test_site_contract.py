@@ -22,7 +22,6 @@ sys.path.insert(0, str(ROOT))
 
 SITE = ROOT / "site"
 HTML = (SITE / "index.html").read_text(encoding="utf-8")
-JS_FILES = ["app.js", "item-ui-placeholder", "item-form.js", "form-ui.js"]
 JS_SOURCES = {n: (SITE / n).read_text(encoding="utf-8")
               for n in ("app.js", "item-form.js", "form-ui.js")}
 CSS = (SITE / "styles.css").read_text(encoding="utf-8")
@@ -122,6 +121,51 @@ def test_download_links_match_what_the_bundler_emits(tmp_path: Path) -> None:
         assert {"name", "kind", "count", "total_points", "entry_count", "artifacts"} <= set(bundle)
         for artifact in bundle["artifacts"]:
             assert {"path", "bytes", "sha256"} == set(artifact)
+
+
+def test_preview_assembly_deletes_nothing(tmp_path: Path) -> None:
+    """Refreshing the preview must not remove what it did not create.
+
+    `deploy-pages.yml` assembles `_site/` and begins with `rm -rf _site`. On a
+    runner that is a build product of a throwaway checkout, so it costs nothing.
+    Copied into a reader's working copy it is a delete of a directory they did
+    not create — and the command itself gives them no way to tell whether that
+    directory held only build output. So the local assembly writes into a path it
+    is given and leaves everything else where it is, including on a second run
+    over a populated directory.
+    """
+    out = tmp_path / "preview"
+    out.mkdir()
+    keep = out / "KEEP.txt"
+    keep.write_text("not mine to delete\n", encoding="utf-8")
+
+    def assemble() -> str:
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "preview_site.py"),
+             "--out", str(out), "--no-serve"],
+            capture_output=True, text=True, cwd=str(ROOT),
+        )
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        return proc.stdout
+
+    first = assemble()
+    assert keep.read_text(encoding="utf-8") == "not mine to delete\n"
+    # An entry the assembly does not produce is the one that makes a preview
+    # disagree with the tree, so it has to be named rather than trusted.
+    assert "KEEP.txt" in first, first
+
+    for name in ("index.html", "items.json", "schema.json", ".nojekyll"):
+        assert (out / name).is_file(), name
+    assert (out / "download" / "manifest.json").is_file()
+    assert (out / "results" / "latest.json").is_file()
+
+    # The asset list is read off the page, so a preview cannot serve a copy of a
+    # script that the deploy would have stamped.
+    for ref in re.findall(r'<script src="([^"]+)"', (out / "index.html").read_text(encoding="utf-8")):
+        assert "?v=" in ref, f"unstamped script in the assembled page: {ref}"
+
+    assemble()
+    assert keep.read_text(encoding="utf-8") == "not mine to delete\n"
 
 
 def test_schema_exports_everything_the_form_reads() -> None:
