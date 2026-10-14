@@ -1,0 +1,125 @@
+{
+  "schema_version": "acnlb-item-1",
+  "required_fields": [
+    "id",
+    "track",
+    "category",
+    "task_type",
+    "task",
+    "prompt",
+    "has_context",
+    "jurisdiction",
+    "authority_basis",
+    "gold_answer",
+    "rubric",
+    "max_positive_points",
+    "notes"
+  ],
+  "valid_tracks": [
+    "core",
+    "retrieval",
+    "workflows"
+  ],
+  "track_labels": {
+    "core": "核心",
+    "workflows": "工作流",
+    "retrieval": "检索"
+  },
+  "valid_tiers": [
+    "中",
+    "低",
+    "高"
+  ],
+  "tier_points": {
+    "高": 2.0,
+    "中": 1.0,
+    "低": 0.5
+  },
+  "retrieval_classes": [
+    "statute",
+    "similar_case",
+    "document"
+  ],
+  "negatives": [
+    {
+      "code": "HALLUC_FACT",
+      "points": -1.0,
+      "label_zh": "编造事实",
+      "label_en": "Fabricated fact",
+      "description": "编造合同/文件里不存在的事实、条款、数字",
+      "task_defined": false
+    },
+    {
+      "code": "HALLUC_CITE",
+      "points": -1.0,
+      "label_zh": "编造引用",
+      "label_en": "Fabricated citation",
+      "description": "编造不存在的法条、案号、司法解释",
+      "task_defined": false
+    },
+    {
+      "code": "REPEALED_LAW",
+      "points": -1.0,
+      "label_zh": "引用已废止法律",
+      "label_en": "Repealed law cited",
+      "description": "引用已废止法律（如《合同法》《担保法》）或旧版本条文",
+      "task_defined": false
+    },
+    {
+      "code": "WRONG_HIERARCHY",
+      "points": -1.0,
+      "label_zh": "效力位阶错误",
+      "label_en": "Authority-hierarchy error",
+      "description": "把非约束性来源当约束性（参考性案例当指导性案例、地方性文件当司法解释）",
+      "task_defined": false
+    },
+    {
+      "code": "EXTRATEXT",
+      "points": -0.5,
+      "label_zh": "冗余/错误引申",
+      "label_en": "Extraneous or misconstrued",
+      "description": "准确但无关或错误引申的冗余表述",
+      "task_defined": false
+    },
+    {
+      "code": "FORMAT_BREACH",
+      "points": 0.0,
+      "label_zh": "格式违规",
+      "label_en": "Format breach",
+      "description": "未满足明确格式要求（长度下限、必含小节）；分值由任务自定义",
+      "task_defined": true
+    }
+  ],
+  "default_rubric": "# {item_id} rubric — {task}\n\n## Affirmative Points\n\n### 1. Structure (格式与结构)\n- 1 pt  TODO：格式或结构要求，例如「是否按「风险等级」或「条款类型」分层呈现？」\n\n### 2. Style (风格)\n- N/A\n\n### 3. Substance (实质)\n- 1 pt  TODO：一个可核验的实质命题，例如「是否指出需完成其他股东优先购买权放弃程序？【《公司法》第71条】」\n\n## Negative Points\n- -1 pt  [HALLUC_FACT] 编造文件/合同里不存在的事实、条款或数字\n- -1 pt  [HALLUC_CITE] 编造不存在的法条、案号、司法解释\n- -1 pt  [REPEALED_LAW] 引用已废止法律（如《合同法》《担保法》）或旧版本条文\n- -1 pt  [WRONG_HIERARCHY] 把非约束性来源当约束性（参考性案例当指导性案例、地方文件当司法解释）\n- -0.5 pt [EXTRATEXT] 准确但无关或错误引申的冗余表述\n- -2 pts [FORMAT_BREACH] 未满足明确格式要求（长度下限、必含小节）——如不适用请删除本行\n",
+  "intake_sections": [
+    "documents",
+    "gold",
+    "gold answer",
+    "notes",
+    "prompt",
+    "retrieval gold",
+    "retrieval_gold",
+    "rubric",
+    "参考答案",
+    "检索 gold",
+    "检索基准"
+  ],
+  "gold_sections": [
+    "gold answer",
+    "gold",
+    "参考答案"
+  ],
+  "retrieval_sections": [
+    "retrieval gold",
+    "retrieval_gold",
+    "检索 gold",
+    "检索基准"
+  ],
+  "paths": {
+    "gold_dir": "gold",
+    "item_suffix": ".json",
+    "rubric_suffix": ".rubric.md"
+  },
+  "id_pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+  "id_hint": "<track>-<缩写>-<编号>，如 core-tx-0011"
+}

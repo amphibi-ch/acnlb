@@ -33,6 +33,8 @@
         <nav class="mini">
           <a href="../../tree/HEAD/items/bench10" data-repo-link="items"
              data-label-en="Item set" data-label-zh="题集">题集</a>
+          <a href="#download" data-label-en="Download" data-label-zh="下载">下载</a>
+          <a href="#contribute" data-label-en="Add items" data-label-zh="新增题目">新增题目</a>
           <a href="../../actions/workflows/run-eval.yml" data-repo-link="workflow">Actions</a>
           <button id="lang-toggle" class="lang" type="button" aria-label="Switch language">EN</button>
         </nav>
@@ -51,17 +53,19 @@
       </p>
 
       <div class="actions">
-        <a class="btn btn-fill" href="../../actions/workflows/run-eval.yml" data-repo-link="workflow"
-           data-label-en="Run on GitHub Actions" data-label-zh="在 GitHub Actions 上运行">在 GitHub Actions 上运行</a>
+        <a class="btn btn-fill" href="#download"
+           data-label-en="Download the item set" data-label-zh="下载题集">下载题集</a>
+        <a class="btn btn-line" href="#contribute"
+           data-label-en="Add an item" data-label-zh="新增题目">新增题目</a>
         <a class="btn btn-line" href="#run-local"
            data-label-en="Run locally" data-label-zh="本地运行">本地运行</a>
       </div>
 
-      <p class="hint" data-lang="en">GitHub Actions needs nothing but a <code>MODEL_API_KEY</code>
-        secret; a local run needs Python 3.11+. Both call the same command —
-        <a href="#run">how to run</a>.</p>
-      <p class="hint" data-lang="zh" hidden>GitHub Actions 只差一个 <code>MODEL_API_KEY</code>
-        secret，本地跑需要 Python 3.11+。两条路调的是同一条命令——详见<a href="#run">怎么跑</a>。</p>
+      <p class="hint" data-lang="en">One click gets the item set as a zip — no clone, no GitHub
+        detour — and one form adds an item without hand-writing JSON. Both are served from this
+        page; nothing leaves your browser. <a href="#run">How to run</a>.</p>
+      <p class="hint" data-lang="zh" hidden>一键把题集下成 zip，不用 clone、不用绕去 GitHub；
+        新增题目也只需要填表，不必手写 JSON。两者都由本页提供，数据不出浏览器。详见<a href="#run">怎么跑</a>。</p>
     </section>
 
     <section class="facts" aria-label="At a glance">
@@ -92,6 +96,121 @@
       </div>
       <p id="items-status" class="muted"></p>
       <div id="items-body"></div>
+    </section>
+
+    <section class="download" id="download">
+      <div class="sec-head">
+        <h2 data-lang="en">Take it with you</h2>
+        <h2 data-lang="zh" hidden>拿到本地</h2>
+        <span class="quiet" id="download-meta"></span>
+      </div>
+      <p class="soft" data-lang="en">Served from this site — no GitHub detour, no clone. The item
+        set unpacks straight into <code>--items</code>; the workspace zip already carries the
+        harness. <code>SHA256SUMS</code> and <code>manifest.json</code> let you check that what
+        arrived is what was published.</p>
+      <p class="soft" data-lang="zh" hidden>全部由本站直接提供，不用绕去 GitHub，也不用 clone。题集
+        解压后可直接当 <code>--items</code> 的参数；工作区包自带 harness。用
+        <code>SHA256SUMS</code> 与 <code>manifest.json</code> 可以核对下载到的东西与发布的一致。</p>
+
+      <div class="dl-grid">
+        <a class="dl-card" href="download/acnlb-bench10.zip" download data-dl="acnlb-bench10.zip">
+          <span class="dl-name" data-lang="en">Item set (.zip)</span>
+          <span class="dl-name" data-lang="zh" hidden>题集（.zip）</span>
+          <span class="dl-sub" data-lang="en">items/bench10 — tasks, rubrics, gold answers, documents</span>
+          <span class="dl-sub" data-lang="zh" hidden>items/bench10：题目、rubric、参考答案、附件</span>
+          <span class="dl-fact"></span>
+        </a>
+        <a class="dl-card" href="download/acnlb-workspace.zip" download data-dl="acnlb-workspace.zip">
+          <span class="dl-name" data-lang="en">Workspace (.zip)</span>
+          <span class="dl-name" data-lang="zh" hidden>工作区（.zip）</span>
+          <span class="dl-sub" data-lang="en">harness + item sets + site; runnable as unpacked</span>
+          <span class="dl-sub" data-lang="zh" hidden>harness + 题集 + 站点，解压即可跑</span>
+          <span class="dl-fact"></span>
+        </a>
+        <a class="dl-card" href="download/acnlb-bench10.bundle.json" download data-dl="acnlb-bench10.bundle.json">
+          <span class="dl-name" data-lang="en">Item set (.bundle.json)</span>
+          <span class="dl-name" data-lang="zh" hidden>题集（.bundle.json）</span>
+          <span class="dl-sub" data-lang="en">every item in one file, rubric and gold inlined</span>
+          <span class="dl-sub" data-lang="zh" hidden>单文件全量：题目内联 rubric 与参考答案</span>
+          <span class="dl-fact"></span>
+        </a>
+        <a class="dl-card dl-card-quiet" href="download/SHA256SUMS" download data-dl="SHA256SUMS">
+          <span class="dl-name" data-lang="en">Checksums</span>
+          <span class="dl-name" data-lang="zh" hidden>校验和</span>
+          <span class="dl-sub" data-lang="en">shasum -a 256 -c SHA256SUMS</span>
+          <span class="dl-sub" data-lang="zh" hidden>shasum -a 256 -c SHA256SUMS</span>
+          <span class="dl-fact"></span>
+        </a>
+      </div>
+    </section>
+
+    <section class="contribute" id="contribute">
+      <div class="sec-head">
+        <h2 data-lang="en">Add an item</h2>
+        <h2 data-lang="zh" hidden>新增题目</h2>
+        <span class="quiet" id="draft-state"></span>
+      </div>
+      <p class="soft" data-lang="en">Fill the form and get exactly the three files
+        <code>acnlb new --intake</code> would have written: <code>&lt;id&gt;.json</code>,
+        <code>&lt;id&gt;.rubric.md</code>, <code>gold/&lt;id&gt;.md</code>. Validation runs against
+        the schema the CLI itself owns, so what this page accepts, <code>validate</code> accepts.
+        Drafts stay in your browser; the export is a download. Nothing is uploaded.</p>
+      <p class="soft" data-lang="zh" hidden>填完表，导出的正是 <code>acnlb new --intake</code> 会写的三个文件：
+        <code>&lt;id&gt;.json</code>、<code>&lt;id&gt;.rubric.md</code>、<code>gold/&lt;id&gt;.md</code>。
+        校验用的是 CLI 自己的那份 schema，所以本页通过的东西 <code>validate</code> 一定通过。草稿只留在本机浏览器，
+        导出即下载，不上传任何内容。</p>
+
+      <div class="builder">
+        <div class="builder-bar">
+          <button id="row-add" class="btn btn-fill btn-sm" type="button"
+                  data-label-en="Add item" data-label-zh="新增一条">新增一条</button>
+          <button id="import-toggle" class="btn btn-line btn-sm" type="button"
+                  data-label-en="Paste / import" data-label-zh="粘贴 / 导入">粘贴 / 导入</button>
+          <span class="grow"></span>
+          <span class="inline-label" data-label-en="Set name" data-label-zh="题集名">题集名</span>
+          <input id="export-name" class="text-in text-in-sm" type="text" value="draft"
+                 aria-label="item set name">
+          <button id="row-export" class="btn btn-line btn-sm" type="button"
+                  data-label-en="Export all (.zip)" data-label-zh="导出全部（.zip）">导出全部（.zip）</button>
+          <button id="row-clear" class="btn btn-line btn-sm" type="button"
+                  data-label-en="Clear draft" data-label-zh="清空草稿">清空草稿</button>
+        </div>
+
+        <div id="import-panel" class="import-panel" hidden>
+          <p class="soft" data-lang="en">Paste one or more intake forms. A second form starts at an
+            <code>id:</code> line, or after a lone <code>%%%</code> line. Local
+            <code>.md</code> / <code>.json</code> files work too — a <code>.bundle.json</code>
+            downloaded above round-trips.</p>
+          <p class="soft" data-lang="zh" hidden>把一份或多份 intake 表单粘进来。第二条以 <code>id:</code>
+            开头，或用单独一行 <code>%%%</code> 分隔。也可以直接选本地的 <code>.md</code> /
+            <code>.json</code>——上面下载的 <code>.bundle.json</code> 能原样导入。</p>
+          <textarea id="import-text" rows="9" spellcheck="false"
+                    placeholder="id: core-tx-0011&#10;track: core&#10;…"></textarea>
+          <div class="import-actions">
+            <label class="radio"><input type="radio" name="import-mode" value="append" checked>
+              <span data-lang="en">append</span><span data-lang="zh" hidden>追加</span></label>
+            <label class="radio"><input type="radio" name="import-mode" value="replace">
+              <span data-lang="en">replace draft</span><span data-lang="zh" hidden>替换草稿</span></label>
+            <button id="import-go" class="btn btn-fill btn-sm" type="button"
+                    data-label-en="Import" data-label-zh="导入">导入</button>
+            <label class="file-pick">
+              <input type="file" id="import-files" multiple accept=".md,.markdown,.json,.txt">
+              <span data-lang="en">Choose files…</span>
+              <span data-lang="zh" hidden>选择文件…</span>
+            </label>
+            <span class="grow"></span>
+            <input id="row-count" class="text-in text-in-sm" type="number" value="5" min="1" max="50"
+                   aria-label="blank rows">
+            <button id="row-add-n" class="btn btn-line btn-sm" type="button"
+                    data-label-en="Add blank rows" data-label-zh="追加空行">追加空行</button>
+          </div>
+        </div>
+
+        <p id="builder-status" class="muted"></p>
+        <div id="rows-body"></div>
+        <div id="row-editor" class="editor" hidden></div>
+        <div id="builder-log" class="log" hidden></div>
+      </div>
     </section>
 
     <section class="latest" id="latest">
@@ -173,6 +292,8 @@ python -m acnlb run --items items/bench10 \
   </div>
 </footer>
 
+<script src="item-form.js"></script>
+<script src="form-ui.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

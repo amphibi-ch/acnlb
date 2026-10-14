@@ -10,15 +10,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:  # tools/ is not a package; run as a script
+    sys.path.insert(0, str(ROOT))
 
-TRACK_LABELS = {
-    "core": "核心",
-    "workflows": "工作流",
-    "retrieval": "检索",
-}
+from acnlb.schema import TRACK_LABELS  # noqa: E402
 
 
 def rel(path: Path) -> str:

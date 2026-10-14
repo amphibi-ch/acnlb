@@ -80,7 +80,11 @@
       scored: "已评分",
       model: "模型",
       resultHead: headRow(["题目", "任务类型", "轨道", "得分", "%"], [3, 4]),
-      err: "错误"
+      err: "错误",
+      dlMeta: function (b) {
+        return b.count + " 道题 · 合计 " + fmt(b.total_points) + " 分 · " +
+               b.entry_count + " 个文件" + (b.commit ? " · " + b.commit.slice(0, 10) : "");
+      }
     },
     en: {
       itemsHead: headRow(["ID", "Track", "Task", "Points", "Docs", "Authority"], [3, 4]),
@@ -100,7 +104,11 @@
       scored: "Items scored",
       model: "Model",
       resultHead: headRow(["Item", "Task", "Track", "Score", "%"], [3, 4]),
-      err: "err"
+      err: "err",
+      dlMeta: function (b) {
+        return b.count + " items · " + fmt(b.total_points) + " points · " +
+               b.entry_count + " files" + (b.commit ? " · " + b.commit.slice(0, 10) : "");
+      }
     }
   };
 
@@ -137,6 +145,8 @@
     try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {}
     if (RUN_DATA) render(RUN_DATA);
     if (ITEM_DATA) renderItems(ITEM_DATA);
+    if (DL_SEEN) renderDownloads(DL_MANIFEST);
+    if (window.ACNLBFormUI) window.ACNLBFormUI.setLang(LANG);
   }
 
   function initLang() {
@@ -284,6 +294,50 @@
     }
   }
 
+  /* ---------- downloads (download/manifest.json) ---------- */
+
+  /* The buttons live in the HTML so they work before (and without) the fetch.
+   * The manifest only adds size and checksum, which is the part that must come
+   * from the built artifact rather than from anyone's memory. */
+  var DL_MANIFEST = null;
+  var DL_SEEN = false;
+
+  function fmtBytes(n) {
+    n = Number(n) || 0;
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return (n / 1024).toFixed(0) + " KB";
+    return (n / 1048576).toFixed(1) + " MB";
+  }
+
+  function renderDownloads(manifest) {
+    var facts = {};
+    var bundles = (manifest && manifest.bundles) || [];
+    bundles.forEach(function (b) {
+      (b.artifacts || []).forEach(function (a) { facts[a.path] = a; });
+    });
+    document.querySelectorAll("[data-dl]").forEach(function (a) {
+      var slot = a.querySelector("[data-dl-fact]");
+      if (!slot) return;
+      var f = facts[a.getAttribute("data-dl")];
+      slot.textContent = f ? fmtBytes(f.bytes) + " · sha256 " + f.sha256.slice(0, 12) : "";
+    });
+    var meta = document.getElementById("download-meta");
+    if (meta) {
+      meta.textContent = bundles.length ? t().dlMeta({
+        count: bundles[0].count,
+        total_points: bundles[0].total_points,
+        entry_count: bundles[0].entry_count,
+        commit: manifest.commit || ""
+      }) : "";
+    }
+  }
+
+  function loadDownload() {
+    fetchFirst(["download/manifest.json", "../download/manifest.json"], 0)
+      .then(function (d) { DL_SEEN = true; DL_MANIFEST = d; renderDownloads(d); })
+      .catch(function () { DL_SEEN = true; renderDownloads(null); });
+  }
+
   /* The page is served from the site root on Pages (results/ sits next to it)
    * and from site/ during local preview (results/ one level up). Try both so the
    * same file works in either layout. items.json always sits next to the page. */
@@ -328,4 +382,6 @@
   primeStatus();
   loadItems();
   loadRun();
+  loadDownload();
+  if (window.ACNLBFormUI) window.ACNLBFormUI.init();
 })();
