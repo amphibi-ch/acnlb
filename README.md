@@ -105,25 +105,34 @@ The site has a form. Fill it in, export, and you get **exactly** the three files
 
 The fields are constrained by **what the published set already uses**, not by a list
 someone typed into the page. `tools/build_items_index.py` derives `vocab` from
-`items/bench10` — the categories, task types, jurisdictions, authority citations and
-document paths that exist — and the page offers those as a dropdown or a datalist:
+`items/bench10` — the categories, task types, jurisdictions, authority citations,
+document paths and ids that exist, plus one real value per field for the grey hints —
+and the page offers those:
 
-- **id** — a hint, a pattern check, and a button that fills in the next free number
-  for the track and category you picked;
+- **track, then id** — the track picks the rubric skeleton and the id family, so it is
+  asked first. The id field's grey text is the number that row would actually get, and
+  the button beside it fills that in;
 - **category / task_type / jurisdiction** — a closed list whose last entry hands the
   field back to you as free text. The schema keeps these fields free strings on
   purpose, so the list is a suggestion that stops `合同审查` / `合同审核` /
   `contract review` becoming three task types no report can group by;
 - **documents** — one per line, plus a picker of the paths the set already ships;
-- **authority_basis** — a datalist of existing citations, with an article number
-  where you have one;
+- **authority_basis** — a plain text field, deliberately **not** a dropdown: a
+  citation is typed, not picked, and the grey example teaches the shape the set
+  converges on (short title *and* article number) better than an option list does;
 - **has_context** — not asked. It is derived from the document list and shown
   read-only, because a checkbox beside that list is a second source of truth that can
   only disagree with it;
-- **rubric** — a row editor (one row per point: section, sub-label, score, text) fed
-  by per-track templates in `acnlb/scaffold.py`. A rubric the rows cannot carry line
-  for line keeps the raw markdown editor instead, rather than being quietly trimmed;
+- **rubric** — a switch between two ways of writing the same text: a row editor (one
+  row per point: part, sub-label, score, text) fed by per-track templates in
+  `acnlb/scaffold.py`, or the markdown. Exactly one of them is on screen at a time,
+  and a rubric the rows cannot carry line for line forces the markdown rather than
+  being quietly trimmed;
 - **retrieval gold** — a small table, one row per `tier | ref | note`.
+
+Every text field carries a hint. It is a value the set already contains wherever
+there is one, and a format template otherwise — never a value no item has used, which
+would be the page inventing a spelling one layer quieter than a hand-typed dropdown.
 
 What it will not do is commit. The site is static and the repo is public, so an item
 still enters the benchmark the way any change does — a commit by someone with write

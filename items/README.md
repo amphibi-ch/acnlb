@@ -104,13 +104,16 @@ The fields suggest what the **published set already uses**, read out of
 
 | Field | What the form offers |
 |---|---|
-| `id` | the id pattern, and a button that fills in the next free number for the track + category |
+| `track`, `id` | track is asked first, because it picks the rubric skeleton and the id family; the id's grey hint is that row's next free number, and a button fills it in |
 | `category`, `task_type`, `jurisdiction` | the values the set already uses, plus a free-text escape |
 | `documents` | one path per line, plus a picker of the paths the set already ships |
-| `authority_basis` | a datalist of existing citations |
+| `authority_basis` | a plain text field with a grey example of an existing citation — deliberately not a dropdown |
 | `has_context` | shown, not asked — derived from the document list |
-| rubric | a row editor (section / sub-label / score / text) seeded from the track's template; a rubric the rows cannot carry keeps the raw markdown editor |
+| rubric | a switch between the row editor (part / sub-label / score / text), seeded from the track's template, and the raw markdown; only one of the two is on screen |
 | retrieval gold | a small table, one row per `tier \| ref \| note` |
+
+Every text field carries a hint, and the hint is a value the set already contains
+(`vocab.examples`) or a format template — never a value the items have not used.
 
 Nothing is uploaded, and no account is needed. What the form cannot do is commit: the
 site is static and the repo is public, so an item still lands the way any change does —
