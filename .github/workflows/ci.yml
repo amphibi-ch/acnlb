@@ -28,6 +28,41 @@ jobs:
       - name: Tests
         run: python -m pytest tests/ -q
 
+      - name: Site JS parses
+        run: |
+          set -euo pipefail
+          node --check site/item-form.js
+          node --check site/form-ui.js
+          node --check site/app.js
+
+      - name: Committed site data matches the package
+        run: |
+          set -euo pipefail
+          # site/schema.json is what the web form trusts to decide what is valid.
+          # If it drifts from the package, the form starts accepting items the CLI
+          # refuses — silently, and in someone else's checkout.
+          python -m tools.build_site_schema --out /tmp/schema.json
+          diff /tmp/schema.json site/schema.json
+          python -m tools.build_items_index --items items/bench10 --out /tmp/items.json
+          diff /tmp/items.json site/items.json
+
+      - name: Download bundles are byte-reproducible
+        run: |
+          set -euo pipefail
+          python -m tools.build_bundle --items items/bench10 --workspace --out /tmp/dl-a
+          python -m tools.build_bundle --items items/bench10 --workspace --out /tmp/dl-b
+          diff -r /tmp/dl-a /tmp/dl-b
+
+      - name: Download bundles are valid and checksummed
+        run: |
+          set -euo pipefail
+          cd /tmp/dl-a
+          shasum -a 256 -c SHA256SUMS
+          python -c "import zipfile; z=zipfile.ZipFile('acnlb-bench10.zip'); assert z.testzip() is None"
+          mkdir -p unpacked && python -c "import zipfile; zipfile.ZipFile('acnlb-bench10.zip').extractall('unpacked')"
+          cd - >/dev/null
+          python -m acnlb validate --items /tmp/dl-a/unpacked/bench10
+
       - name: Validate every published item set
         run: |
           set -euo pipefail

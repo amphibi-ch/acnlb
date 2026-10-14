@@ -23,7 +23,10 @@ on:
     paths:
       - "site/**"
       - "items/bench10/**"
+      - "acnlb/**"
       - "tools/build_items_index.py"
+      - "tools/build_site_schema.py"
+      - "tools/build_bundle.py"
       - "tools/stamp_assets.py"
       - "results/latest.json"
       - ".github/workflows/deploy-pages.yml"
@@ -51,17 +54,25 @@ jobs:
       - name: Assemble site
         run: |
           set -euo pipefail
-          # Rebuild the item-set index so the deployed table can never be stale.
+          # Regenerate both data files so the deployed page can never be stale,
+          # and so the form validates against the schema the package owns rather
+          # than against a copy someone edited by hand.
           python3 tools/build_items_index.py --items items/bench10 --out site/items.json
+          python3 tools/build_site_schema.py --out site/schema.json
           rm -rf _site
           mkdir -p _site/results
           cp -R site/. _site/
           cp -R results/. _site/results/
           touch _site/.nojekyll
+          # items/ was never inside _site, so "give me this item set" used to
+          # mean "go find it on GitHub". Build the downloads the site serves.
+          python3 tools/build_bundle.py --items items/bench10 --workspace \
+            --out _site/download --commit "${GITHUB_SHA}"
           # Pages serves assets with max-age=600, so an unchanged app.js URL means
           # a browser can run yesterday's JS against today's HTML for ten minutes.
           # Hash-stamp the deployed copy only; site/index.html stays clean.
-          python3 tools/stamp_assets.py _site/index.html
+          python3 tools/stamp_assets.py _site/index.html \
+            --assets styles.css app.js item-form.js form-ui.js
 
       - uses: actions/upload-pages-artifact@v3
         with:
