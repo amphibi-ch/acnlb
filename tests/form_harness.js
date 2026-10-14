@@ -11,6 +11,11 @@
  *   rubric     {text}                           -> parsed rubric
  *   roundtrip  {row}                            -> row -> intake -> parsed
  *   zip        {entries, out}                   -> writes a store-zip, prints sha256
+ *   rules      {values}                         -> idProblem / docPathProblem per value
+ *   nextid     {vocab, cases}                   -> nextId per case
+ *   rowsfrom   {text}                           -> the rubric as editable rows
+ *   rowsto     {rows, id?, task?}                -> rows back to markdown
+ *   template   {track, id?, task?}              -> the track's skeleton
  */
 "use strict";
 
@@ -51,6 +56,25 @@ if (op === "build") {
     bytes: bytes.length,
     sha256: crypto.createHash("sha256").update(Buffer.from(bytes)).digest("hex")
   };
+} else if (op === "rules") {
+  result = {
+    ids: payload.values.map(function (v) { return { value: v, problem: form.idProblem(v, schema) }; }),
+    docs: payload.values.map(function (v) { return { value: v, problem: form.docPathProblem(v) }; })
+  };
+} else if (op === "nextid") {
+  result = {
+    ids: (payload.cases || []).map(function (c) { return form.nextId(payload.vocab, c); })
+  };
+} else if (op === "rowsfrom") {
+  result = form.rubricRows(payload.text, schema.rubric_layout, schema);
+} else if (op === "rowsto") {
+  result = {
+    text: form.rubricFromRows(payload.rows, {
+      layout: schema.rubric_layout, id: payload.id || "", task: payload.task || ""
+    })
+  };
+} else if (op === "template") {
+  result = { text: form.rubricTemplate(schema, payload.track, payload.id || "", payload.task || "") };
 } else {
   console.error("unknown op: " + op);
   process.exit(2);

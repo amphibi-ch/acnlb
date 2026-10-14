@@ -450,3 +450,232 @@ def test_site_schema_is_in_sync(tmp_path: Path) -> None:
     assert set(committed["valid_tracks"]) == set(VALID_TRACKS)
     assert {n["code"] for n in committed["negatives"]} == set(negatives.CODES)
     assert "TODO" in committed["default_rubric"]
+
+
+# ---------- the two rules that turn a string into a path ----------
+
+# Chosen so both sides have to agree on the *rule*, not on the wording: the page
+# prints its own sentence (it is bilingual), Python prints one.
+PATH_CASES = [
+    "core-tx-0003", "ret-0011", "x", "core_tx.1", "A-b_c.d",
+    "", "   ", ".", "..", "/etc/passwd", "\\etc\\passwd", "C:\\x.md",
+    "a b", "a/b", "core tx", "…", "../x", "docs/../x", "x.json",
+    "docs/core-tx-0001-loan-guarantee.md", "docs//a.md", "gold/a.md",
+    "-flag", "id\n", "\tshift",
+]
+
+
+@requires_node
+def test_id_rules_agree_with_the_cli(tmp_path: Path) -> None:
+    from acnlb.schema import id_problem
+
+    js = run_harness("rules", {"values": PATH_CASES}, tmp_path)
+    assert [c["value"] for c in js["ids"]] == PATH_CASES
+    for case in js["ids"]:
+        py = id_problem(case["value"])
+        assert bool(py) == bool(case["problem"]), (
+            f"id {case['value']!r}: python says {py!r}, js says {case['problem']!r}"
+        )
+
+
+@requires_node
+def test_document_path_rules_agree_with_the_cli(tmp_path: Path) -> None:
+    from acnlb.schema import doc_path_problem
+
+    js = run_harness("rules", {"values": PATH_CASES}, tmp_path)
+    for case in js["docs"]:
+        py = doc_path_problem(case["value"])
+        assert bool(py) == bool(case["problem"]), (
+            f"document path {case['value']!r}: python says {py!r}, js says {case['problem']!r}"
+        )
+
+
+@requires_node
+def test_the_form_refuses_the_paths_the_cli_refuses(tmp_path: Path) -> None:
+    """The load-bearing half: a bad path must not survive `buildItem`.
+
+    Checking `docPathProblem` on its own proves the two functions agree; it does
+    not prove the form calls them. This is the failure the whole constraint exists
+    for — an item that looks fine on the page and is refused at commit time.
+    """
+    bad_id = CORE_MINIMAL.replace("id: core-tx-9001", "id: ../../escape")
+    js = run_harness("build", {"intake": bad_id}, tmp_path)
+    assert not js["ok"] and js["errors"]
+
+    intake = tmp_path / "in.md"
+    bad_doc = CORE_WITH_DOCS.replace("docs/core-lit-9002-facts.md", "../../../etc/passwd")
+    intake.write_text(bad_doc, encoding="utf-8")
+    with pytest.raises(ValueError):
+        scaffold(intake, tmp_path / "items")
+
+    js2 = run_harness("build", {"intake": bad_doc}, tmp_path)
+    assert not js2["ok"], "the form exported an item the CLI refuses"
+    assert any("escapes" in e or "document path" in e for e in js2["errors"]), js2["errors"]
+
+
+# ---------- the next free id ----------
+
+def bench_vocab() -> dict:
+    from acnlb.vocab import build_vocab
+
+    raws = [
+        json.loads(p.read_text(encoding="utf-8"))
+        for p in sorted((ROOT / "items" / "bench10").glob("*.json"))
+    ]
+    return build_vocab(raws)
+
+
+NEXT_ID_CASES = [
+    {},
+    {"prefix": "core-tx-"},
+    {"prefix": "wf-"},
+    {"prefix": "nope-"},
+    {"track": "core"},
+    {"track": "retrieval"},
+    {"track": "workflows"},
+    {"track": "core", "category": "Transaction"},
+    {"track": "core", "category": "Litigation"},
+    {"track": "retrieval", "category": "Retrieval"},
+    {"track": "core", "category": "Nonexistent"},
+    {"track": "nope"},
+    {"category": "Litigation"},
+]
+
+
+@requires_node
+def test_next_id_agrees_with_the_cli(tmp_path: Path) -> None:
+    """The page's "next free id" button and the issue tool must not disagree.
+
+    They answer the same question about the same set, and an answer that is one
+    off is an id that collides with an existing item — which `validate` cannot
+    see, because the file it would collide with is already there under the same
+    name.
+    """
+    from acnlb.vocab import next_id
+
+    vocab = bench_vocab()
+    js = run_harness("nextid", {"vocab": vocab, "cases": NEXT_ID_CASES}, tmp_path)
+    for case, got in zip(NEXT_ID_CASES, js["ids"]):
+        assert got == next_id(vocab, **case), f"{case}: python {next_id(vocab, **case)!r}, js {got!r}"
+
+
+# ---------- the rubric row editor ----------
+
+def real_rubrics() -> list[Path]:
+    return sorted((ROOT / "items" / "bench10").glob("*.rubric.md"))
+
+
+@requires_node
+@pytest.mark.parametrize("rubric_path", real_rubrics(), ids=lambda p: p.stem)
+def test_rubric_rows_reproduce_the_rubric(rubric_path: Path, tmp_path: Path) -> None:
+    """Editing a rubric as a table must not lose or reword a point.
+
+    The editor's rows are the only representation of the rubric while it is open,
+    so anything they cannot carry is a line the drafter sees and the export does
+    not have. Comparing the *parsed* rubrics rather than the text is deliberate:
+    the serialiser is allowed to normalise whitespace, and it is not allowed to
+    change a section, a subsection, a score or a proposition.
+    """
+    text = rubric_path.read_text(encoding="utf-8")
+
+    rows = run_harness("rowsfrom", {"text": text}, tmp_path)
+    assert not rows["blocked"], rows["blocked"]
+
+    back = run_harness(
+        "rowsto",
+        {"rows": rows["rows"], "id": rubric_path.stem, "task": "t"},
+        tmp_path,
+    )["text"]
+
+    py = parse_rubric_text(text)
+    again = parse_rubric_text(back)
+    assert again.warnings == [], again.warnings
+    assert [(a.section, a.subsection, a.points, a.text) for a in again.affirmative] == \
+           [(a.section, a.subsection, a.points, a.text) for a in py.affirmative]
+    assert [(n.code, n.points, n.text) for n in again.negative] == \
+           [(n.code, n.points, n.text) for n in py.negative]
+    assert again.max_positive_points == py.max_positive_points
+
+    # And the rewritten rubric is still readable by the JS parser the page uses.
+    js = run_harness("rubric", {"text": back}, tmp_path)
+    assert js["maxPositivePoints"] == py.max_positive_points
+    assert js["warnings"] == []
+
+
+@requires_node
+def test_rubric_rows_refuse_what_they_cannot_carry(tmp_path: Path) -> None:
+    """An unrepresentable rubric goes to the raw editor rather than being trimmed."""
+    from acnlb.scaffold import RUBRIC_LAYOUT
+
+    # A heading outside the three the format defines: parsing it is fine, but the
+    # row model has nowhere to put it, so writing rows back would drop the line.
+    stray = "# x-1 rubric — t\n\n## Affirmative Points\n\n### 4. Bonus\n- 1 pt  加分项\n"
+    rows = run_harness("rowsfrom", {"text": stray}, tmp_path)
+    assert rows["blocked"], rows
+
+    # A negative code outside the closed taxonomy: `validate` rejects it, and the
+    # editor's code select could not offer it.
+    unknown = ("# x-1 rubric — t\n\n## Affirmative Points\n\n### 1. Structure (格式与结构)\n"
+               "- 1 pt  ok\n\n## Negative Points\n- -1 pt  [MADE_UP] nope\n")
+    rows2 = run_harness("rowsfrom", {"text": unknown}, tmp_path)
+    assert any("MADE_UP" in b for b in rows2["blocked"]), rows2["blocked"]
+
+    # An empty rubric is not blocked: it is the state you start from, and the
+    # editor has to be able to take the first point.
+    empty = run_harness("rowsfrom", {"text": ""}, tmp_path)
+    assert not empty["blocked"], empty
+    assert empty["rows"] == []
+
+    assert RUBRIC_LAYOUT["na"] == "- N/A"
+
+
+@requires_node
+def test_the_row_editor_writes_the_rubric_it_was_given(tmp_path: Path) -> None:
+    """rows -> markdown -> rows is a fixed point, headings included."""
+    from acnlb.scaffold import RUBRIC_LAYOUT
+
+    rows = [
+        {"kind": "affirmative", "section": "structure", "subsection": "", "points": 1, "text": "分层呈现"},
+        {"kind": "affirmative", "section": "substance", "subsection": "3a. 优先购买权", "points": 2, "text": "放弃程序"},
+        {"kind": "affirmative", "section": "substance", "subsection": "3a. 优先购买权", "points": 0.5, "text": "通知义务"},
+        {"kind": "negative", "code": "REPEALED_LAW", "points": 1, "text": "引用已废止法律"},
+    ]
+    text = run_harness("rowsto", {"rows": rows, "id": "core-tx-9001", "task": "审查"}, tmp_path)["text"]
+    assert text.startswith("# core-tx-9001 rubric — 审查\n")
+    assert RUBRIC_LAYOUT["na"] in text, "an empty section must still be written as N/A"
+    assert f"{RUBRIC_LAYOUT['heading_level']} 2. Style (风格)" in text
+
+    back = run_harness("rowsfrom", {"text": text}, tmp_path)
+    assert not back["blocked"], back["blocked"]
+    assert back["rows"] == rows
+
+    py = parse_rubric_text(text)
+    assert py.item_id == "core-tx-9001"
+    assert py.max_positive_points == 3.5
+    assert [n.code for n in py.negative] == ["REPEALED_LAW"]
+
+
+@requires_node
+@pytest.mark.parametrize("track", ["core", "workflows", "retrieval"])
+def test_the_page_can_edit_every_template_it_offers(track: str, tmp_path: Path) -> None:
+    """A template the row editor cannot reopen is a dead end for the drafter.
+
+    It is offered as a starting point, so it has to survive the round trip like
+    any rubric: parsed by Python, and editable as rows.
+    """
+    from acnlb.scaffold import DEFAULT_RUBRIC, rubric_template
+
+    # The page's copy of the track's skeleton must be the package's, verbatim.
+    packed = rubric_template(track).replace("{item_id}", "core-tx-9001").replace("{task}", "审查")
+    from_page = run_harness("template", {"track": track, "id": "core-tx-9001", "task": "审查"}, tmp_path)
+    assert from_page["text"] == packed, f"{track}: the page's template differs from the package's"
+
+    for tpl in (packed, DEFAULT_RUBRIC):
+        text = tpl.replace("{item_id}", "core-tx-9001").replace("{task}", "审查")
+        py = parse_rubric_text(text)
+        assert py.affirmative, track
+        assert py.warnings == [], (track, py.warnings)
+        assert "TODO" in text
+
+        rows = run_harness("rowsfrom", {"text": text}, tmp_path)
+        assert not rows["blocked"], (track, rows["blocked"])

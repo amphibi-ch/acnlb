@@ -181,6 +181,8 @@ def test_schema_exports_everything_the_form_reads() -> None:
         "retrieval_classes",
         "negatives",
         "default_rubric",
+        "rubric_templates",
+        "rubric_layout",
         "intake_sections",
         "gold_sections",
         "retrieval_sections",
