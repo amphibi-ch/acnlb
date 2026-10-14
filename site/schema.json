@@ -91,6 +91,42 @@
     }
   ],
   "default_rubric": "# {item_id} rubric — {task}\n\n## Affirmative Points\n\n### 1. Structure (格式与结构)\n- 1 pt  TODO：格式或结构要求，例如「是否按「风险等级」或「条款类型」分层呈现？」\n\n### 2. Style (风格)\n- N/A\n\n### 3. Substance (实质)\n- 1 pt  TODO：一个可核验的实质命题，例如「是否指出需完成其他股东优先购买权放弃程序？【《公司法》第71条】」\n\n## Negative Points\n- -1 pt  [HALLUC_FACT] 编造文件/合同里不存在的事实、条款或数字\n- -1 pt  [HALLUC_CITE] 编造不存在的法条、案号、司法解释\n- -1 pt  [REPEALED_LAW] 引用已废止法律（如《合同法》《担保法》）或旧版本条文\n- -1 pt  [WRONG_HIERARCHY] 把非约束性来源当约束性（参考性案例当指导性案例、地方文件当司法解释）\n- -0.5 pt [EXTRATEXT] 准确但无关或错误引申的冗余表述\n- -2 pts [FORMAT_BREACH] 未满足明确格式要求（长度下限、必含小节）——如不适用请删除本行\n",
+  "rubric_templates": {
+    "core": "# {item_id} rubric — {task}\n\n## Affirmative Points\n\n### 1. Structure (格式与结构)\n- 1 pt  TODO：输出形态，例如「是否按『条款定位 → 风险 → 建议』三段式呈现？」\n\n### 2. Style (风格)\n- 1 pt  TODO：语体与呈现要求，例如「是否以条款清单形式枚举，每条不超过 20 字？」\n\n### 3. Substance (实质)\n#### 3a. 核心命题\n- 2 pts TODO：一个可核验的实质命题，例如「是否指出需完成其他股东优先购买权放弃程序？【《公司法》第71条】」\n- 1 pt  TODO：第二个可核验命题\n\n## Negative Points\n- -1 pt  [HALLUC_FACT] 编造文件/合同里不存在的事实、条款或数字\n- -1 pt  [HALLUC_CITE] 编造不存在的法条、案号、司法解释\n- -1 pt  [REPEALED_LAW] 引用已废止法律（如《合同法》《担保法》）或旧版本条文\n- -0.5 pt [EXTRATEXT] 准确但无关或错误引申的冗余表述\n",
+    "workflows": "# {item_id} rubric — {task}\n\n## Affirmative Points\n\n### 1. Structure (格式与结构)\n- 2 pts TODO：输出形态，例如「是否严格输出 JSON，且能被 json.loads 解析？」\n\n### 2. Style (风格)\n- 1 pt  TODO：字段与取值要求，例如「键名是否与模板完全一致？」\n\n### 3. Substance (实质)\n#### 3a. 字段正确性\n- 1 pt  TODO：逐字段的可核验命题，例如「party_a 是否取到合同首部的甲方全称？」\n\n## Negative Points\n- -1 pt  [HALLUC_FACT] 编造文件里不存在的字段值\n- -0.5 pt [EXTRATEXT] 输出形态之外的多余解释\n- -2 pts [FORMAT_BREACH] 输出不是要求的固定形态（缺字段、多余包裹文本）——如不适用请删除本行\n",
+    "retrieval": "# {item_id} rubric — {task}\n\n## Affirmative Points\n\n### 1. Structure (格式与结构)\n- 1 pt  TODO：是否给出法律名称 + 条号（或案号 + 法院）？\n\n### 2. Style (风格)\n- 1 pt  TODO：是否按效力层级分组呈现？\n\n### 3. Substance (实质)\n#### 3a. 依据与分级\n- 2 pts TODO：与「检索基准」逐条对应的可核验命题，例如「是否命中《民法典》第585条？」\n\n## Negative Points\n- -1 pt  [REPEALED_LAW] 引用已废止法律（如《合同法》第114条）\n- -1 pt  [HALLUC_CITE] 编造不存在的法条、案号\n- -1 pt  [WRONG_HIERARCHY] 把参考性案例当指导性案例、地方性文件当司法解释\n"
+  },
+  "rubric_layout": {
+    "title": "# {item_id} rubric — {task}",
+    "affirmative_heading": "## Affirmative Points",
+    "negative_heading": "## Negative Points",
+    "sections": [
+      {
+        "key": "structure",
+        "title": "1. Structure (格式与结构)",
+        "section": "Structure"
+      },
+      {
+        "key": "style",
+        "title": "2. Style (风格)",
+        "section": "Style"
+      },
+      {
+        "key": "substance",
+        "title": "3. Substance (实质)",
+        "section": "Substance"
+      }
+    ],
+    "heading_level": "###",
+    "subsection_level": "####",
+    "affirmative_item": "- {points} {unit}  {text}",
+    "negative_item": "- -{points} {unit}  [{code}] {text}",
+    "na": "- N/A",
+    "points": {
+      "one": "pt",
+      "many": "pts"
+    }
+  },
   "intake_sections": [
     "documents",
     "gold",

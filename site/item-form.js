@@ -252,6 +252,215 @@
     return { code: code, points: parseFloat(m[1]), text: text };
   }
 
+  /* ---------- rubric as rows (mirror of the format in rubric.py) ---------- */
+
+  function fmtPoints(n) { return String(Math.round((Number(n) || 0) * 1e6) / 1e6); }
+
+  function unitFor(points, layout) {
+    var p = (layout && layout.points) || { one: "pt", many: "pts" };
+    return Math.abs(Number(points) || 0) > 1 ? p.many : p.one;
+  }
+
+  function dedupe(list) {
+    var seen = {};
+    return list.filter(function (v) { if (seen[v]) return false; seen[v] = true; return true; });
+  }
+
+  /* A rubric rendered as editable rows, or `blocked` with the reason it cannot
+   * be. The editor writes markdown back out, so a line the row model cannot
+   * carry would be dropped without anyone noticing — the drafter's rubric
+   * quietly getting shorter. So shapes that do not fit (an unparsed line, a
+   * heading outside the three the format defines, a negative code outside the
+   * closed taxonomy) block the row view, and the editor falls back to the raw
+   * textarea instead of approximating. */
+  function rubricRows(text, layout, schema) {
+    var sections = (layout && layout.sections) || [];
+    if (!sections.length) return { rows: [], blocked: ["rubric layout missing"] };
+    var bySection = {};
+    sections.forEach(function (s) { bySection[String(s.section).toLowerCase()] = s.key; });
+
+    var codes = {};
+    ((schema && schema.negatives) || []).forEach(function (n) { codes[n.code] = true; });
+    var hasCodes = Object.keys(codes).length > 0;
+
+    var parsed = parseRubric(text);
+    var blocked = parsed.warnings.slice();
+    var rows = [];
+
+    parsed.affirmative.forEach(function (a) {
+      var key = bySection[String(a.section || "").toLowerCase()];
+      if (!key) {
+        blocked.push("得分点所在段落不在 rubric 格式内：" + (a.section || ""));
+        return;
+      }
+      rows.push({
+        kind: "affirmative", section: key, subsection: a.subsection || "",
+        points: a.points, text: a.text
+      });
+    });
+    parsed.negative.forEach(function (n) {
+      if (hasCodes && !codes[n.code]) blocked.push("未知负分代码 " + n.code);
+      rows.push({ kind: "negative", code: n.code, points: Math.abs(n.points), text: n.text });
+    });
+
+    // An empty rubric is the state you start from, not a shape the table cannot
+    // carry: it gets the "no points yet" row and the add buttons. Only *text*
+    // that produced no rows is a reason to fall back to the raw editor.
+    if (!rows.length && String(text || "").trim()) blocked.push("没有可编辑的得分点");
+    return { rows: rows, blocked: dedupe(blocked) };
+  }
+
+  /* Rows → markdown. The headings come from `layout`, never from this file: a
+   * second copy of "## Affirmative Points" living in JavaScript is exactly how
+   * the form comes to write a format `parse_rubric_text` does not read. */
+  function rubricFromRows(rows, opts) {
+    opts = opts || {};
+    var layout = opts.layout;
+    if (!layout || !layout.affirmative_heading || !layout.negative_heading || !layout.title) {
+      throw new Error("rubric layout missing from the schema export");
+    }
+    var out = [layout.title.split("{item_id}").join(opts.id || "").split("{task}").join(opts.task || ""), ""];
+    out.push(layout.affirmative_heading, "");
+
+    (layout.sections || []).forEach(function (sec) {
+      out.push(layout.heading_level + " " + sec.title);
+      var mine = rows.filter(function (r) {
+        return r.kind === "affirmative" && r.section === sec.key;
+      });
+      if (!mine.length) {
+        out.push(layout.na);
+        out.push("");
+        return;
+      }
+      var current = null;
+      mine.forEach(function (r) {
+        var sub = (r.subsection || "").trim();
+        if (sub !== current) {
+          current = sub;
+          if (sub) out.push(layout.subsection_level + " " + sub);
+        }
+        out.push(rubricLine(layout.affirmative_item, r, layout));
+      });
+      out.push("");
+    });
+
+    out.push(layout.negative_heading);
+    var negatives = rows.filter(function (r) { return r.kind === "negative"; });
+    if (negatives.length) {
+      out.push("");
+      negatives.forEach(function (r) { out.push(rubricLine(layout.negative_item, r, layout)); });
+    }
+    out.push("");
+    return out.join("\n");
+  }
+
+  function rubricLine(tpl, row, layout) {
+    var magnitude = Math.abs(Number(row.points) || 0);
+    return tpl
+      .split("{points}").join(fmtPoints(magnitude))
+      .split("{unit}").join(unitFor(magnitude, layout))
+      .split("{code}").join(row.code || "")
+      .split("{text}").join(row.text || "");
+  }
+
+  function blankRubricRow(kind, schema, layout) {
+    if (kind === "negative") {
+      var first = ((schema && schema.negatives) || [])[0] || {};
+      // The taxonomy's defaults are negative magnitudes; FORMAT_BREACH is 0
+      // because its score is task-defined, so a fresh row needs a number.
+      return { kind: "negative", code: first.code || "", points: Math.abs(Number(first.points) || 0) || 1, text: "" };
+    }
+    var sections = (layout && layout.sections) || [];
+    return { kind: "affirmative", section: (sections[0] || {}).key || "", subsection: "", points: 1, text: "" };
+  }
+
+  /* The skeleton for `track`, with this item's id and task substituted. */
+  function rubricTemplate(schema, track, id, task) {
+    var templates = (schema && schema.rubric_templates) || {};
+    var tpl = templates[track] || (schema && schema.default_rubric) || "";
+    return tpl.split("{item_id}").join(id).split("{task}").join(task);
+  }
+
+  /* ---------- ids and document paths (mirror of schema.id_problem /
+   * schema.doc_path_problem) ----------
+   *
+   * Both are free strings in the item schema and both become paths under the
+   * items directory, so both are checked by the thing that turns them into a
+   * path. The rule is mirrored here rather than re-exported as a regex because
+   * there are two rules (the pattern and the `.` / `..` refusal); the *wording*
+   * is not mirrored — Python prints one sentence, the page prints its own. */
+
+  var DEFAULT_ID_WIDTH = 4;
+
+  function idProblem(value, schema) {
+    var v = String(value == null ? "" : value).trim();
+    if (!v) return "id is required";
+    var pattern = (schema && schema.id_pattern) || "";
+    var ok = true;
+    if (pattern) {
+      // A bad pattern in schema.json must not brick the page.
+      try { ok = new RegExp(pattern).test(v); } catch (e) { ok = true; }
+    }
+    if (v === "." || v === ".." || !ok) {
+      return "id " + JSON.stringify(v) + " cannot be a file name — expected " + ((schema && schema.id_hint) || "");
+    }
+    return "";
+  }
+
+  function docPathProblem(value) {
+    var v = String(value == null ? "" : value).trim();
+    if (!v) return "document path is empty";
+    if (v.charAt(0) === "/" || v.charAt(0) === "\\") {
+      return "document path " + JSON.stringify(v) + " is absolute — use a path relative to the items dir";
+    }
+    if (/^[A-Za-z]:/.test(v)) {
+      return "document path " + JSON.stringify(v) + " has a drive letter — use a path relative to the items dir";
+    }
+    var parts = v.split(/[\\\/]+/).filter(function (p) { return p.length > 0; });
+    if (!parts.length) return "document path " + JSON.stringify(v) + " is not a path";
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i] === "." || parts[i] === "..") {
+        return "document path " + JSON.stringify(v) + " escapes the items dir";
+      }
+    }
+    return "";
+  }
+
+  /* The next unused id, mirroring acnlb.vocab.next_id: explicit prefix wins,
+   * otherwise the busiest family matching the track, then the category. */
+  function nextId(vocab, opts) {
+    opts = opts || {};
+    var entries = ((vocab || {}).id_prefixes || []).filter(function (e) { return e && e.prefix; });
+    var prefix = opts.prefix || "";
+    if (prefix) {
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].prefix === prefix) return String(entries[i].next || "");
+      }
+      // An unseen prefix gets 0001 rather than somebody else's number.
+      return prefix + String(1).padStart(DEFAULT_ID_WIDTH, "0");
+    }
+    var track = opts.track || "", category = opts.category || "";
+    var pool = entries.filter(function (e) {
+      return track && (e.tracks || []).indexOf(track) >= 0;
+    });
+    if (!pool.length) pool = entries;
+    var narrowed = pool.filter(function (e) {
+      return category && (e.categories || []).indexOf(category) >= 0;
+    });
+    if (narrowed.length) pool = narrowed;
+    if (!pool.length) return "";
+    var best = pool[0];
+    pool.forEach(function (e) {
+      var c = e.count || 0, bc = best.count || 0;
+      if (c > bc || (c === bc && String(e.prefix) > String(best.prefix))) best = e;
+    });
+    return String(best.next || "");
+  }
+
+  function sectionKeys(layout) {
+    return ((layout && layout.sections) || []).map(function (s) { return s.key; });
+  }
+
   /* ---------- intake → item (mirror of scaffold.scaffold) ---------- */
 
   var DEFAULT_GOLD_TODO = [
@@ -261,11 +470,6 @@
     "     顺序不能反——先写 rubric 会锚定在你想到的东西上，参考答案就不完整。 -->",
     ""
   ].join("\n");
-
-  function defaultRubric(schema, id, task) {
-    var tpl = (schema && schema.default_rubric) || "";
-    return tpl.split("{item_id}").join(id).split("{task}").join(task);
-  }
 
   function asBool(value) {
     var v = String(value).trim().toLowerCase();
@@ -305,7 +509,9 @@
 
     var task = meta.task.trim();
     var notes = ((meta.notes || "") + (intake.notes ? "\n" + intake.notes : "")).trim();
-    var rubricText = (intake.rubric || "").trim() || defaultRubric(schema, id, task);
+    // Same skeleton the CLI writes when the rubric is left blank: the track's
+    // template, not the generic one, so both routes produce the same draft.
+    var rubricText = (intake.rubric || "").trim() || rubricTemplate(schema, track, id, task);
     var rubric = parseRubric(rubricText);
 
     var hasCtx;
@@ -383,6 +589,17 @@
     if (item.has_context && !(item.documents || []).length) {
       problems.push("has_context 为 true 但 documents[] 为空");
     }
+    // Both become paths under the items directory. The CLI checks them where it
+    // turns them into a path, so the page has to check them too — otherwise it
+    // happily exports an item `validate` refuses, in someone else's checkout.
+    if (item.id) {
+      var idIssue = idProblem(item.id, schema);
+      if (idIssue) problems.push(idIssue);
+    }
+    (item.documents || []).forEach(function (d) {
+      var pathIssue = docPathProblem(d.path);
+      if (pathIssue) problems.push(pathIssue);
+    });
     if (item.track === "retrieval" && !item.retrieval_gold) {
       problems.push("检索题必须带 retrieval_gold");
     }
@@ -425,17 +642,11 @@
   }
 
   /* Mirrors `acnlb validate`'s TODO / shape checks. Warnings, not errors: a
-   * draft with TODOs is a draft, not a broken file. */
+   * draft with TODOs is a draft, not a broken file. The id shape is checked by
+   * `validateItem` instead — it is an error, not a warning, so it can never
+   * reach the lint branch. */
   function lintItem(built, schema) {
     var out = [];
-    var pattern = (schema && schema.id_pattern) || "";
-    if (pattern) {
-      try {
-        if (built.id && !new RegExp(pattern).test(built.id)) {
-          out.push("id " + JSON.stringify(built.id) + " 不像建议格式：" + ((schema && schema.id_hint) || ""));
-        }
-      } catch (e) { /* a bad pattern in schema.json must not brick the page */ }
-    }
     (built.rubric ? built.rubric.affirmative : []).forEach(function (a) {
       if (a.text.indexOf("TODO") >= 0) out.push("得分点仍是 TODO 占位：" + a.text.slice(0, 40));
     });
@@ -453,7 +664,8 @@
     out.push("task_type: " + (row.task_type || ""));
     out.push("task: " + (row.task || ""));
     out.push("jurisdiction: " + (row.jurisdiction || "CN-mainland"));
-    out.push("has_context: " + (row.has_context ? "true" : "false"));
+    // `has_context` is deliberately not written: both sides derive it from the
+    // document list, so a stored copy could only ever contradict them.
     out.push("authority_basis: " + splitBasis(row.authority_basis_text || "").join(", "));
     out.push("notes: " + (row.notes || ""));
     out.push("", "## Prompt", "", row.prompt || "");
@@ -626,7 +838,16 @@
     validateItem: validateItem,
     lintItem: lintItem,
     parseRubric: parseRubric,
-    defaultRubric: defaultRubric,
+    // Row model for the rubric editor, and the id / path rules the CLI applies.
+    rubricRows: rubricRows,
+    rubricFromRows: rubricFromRows,
+    blankRubricRow: blankRubricRow,
+    rubricTemplate: rubricTemplate,
+    sectionKeys: sectionKeys,
+    fmtPoints: fmtPoints,
+    idProblem: idProblem,
+    docPathProblem: docPathProblem,
+    nextId: nextId,
     assembleFiles: assembleFiles,
     splitBasis: splitBasis,
     makeZip: makeZip,

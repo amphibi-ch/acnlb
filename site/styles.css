@@ -519,7 +519,50 @@ tbody tr:last-child td { border-bottom: 0; }
   word-break: break-word;
 }
 .editor-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.retrieval-fields { border-left: 2px solid var(--rose); padding-left: 14px; }
+
+/* Constrained fields. `.stack` is the closed-list control: a `<select>` with the
+   values the set already uses, plus a text input that appears only when the
+   drafter picks the escape hatch. `.picker` is the smaller "insert one of these"
+   select (document paths, rubric template). */
+.stack { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.stack > select, .stack > input { width: 100%; }
+.picker { max-width: 100%; font-size: 12.5px; }
+.num-input { width: 5.5em; }
+
+/* `has_context` is derived from the document list, so it is shown, not asked. */
+.ctx-line {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  background: var(--rose-wash);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 14px;
+}
+
+/* The rubric editor: one block per kind, each a table of rows. The same table
+   carries the retrieval-gold rows, so the widths are the ones both share —
+   first column for the enum, last for the delete button, the rest free. */
+.rubric-body { margin-top: 4px; }
+.rubric-block { margin-bottom: 12px; }
+.rubric-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.rubric-table { width: 100%; min-width: 560px; font-size: 12.5px; }
+.rubric-table th, .rubric-table td { padding: 4px 6px; vertical-align: top; }
+.rubric-table th { font-weight: 500; color: var(--muted); text-align: left; }
+.rubric-table textarea { width: 100%; min-height: 2.6em; }
+.rubric-table select { max-width: 14em; }
+.rubric-table td:first-child { width: 12em; }
+.rubric-table td:last-child { width: 3.5em; }
+
+.ret-body { margin-top: 4px; }
+.ret-field { border-left: 2px solid var(--rose); padding-left: 14px; }
 
 .editor-check {
   margin-top: 14px;

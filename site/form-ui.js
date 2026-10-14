@@ -5,6 +5,13 @@
  * DOM-free and checked against the Python it mirrors. This file only moves
  * strings between that module and the page.
  *
+ * Two other things arrive over the wire and are used as data, never re-typed:
+ * `schema.json` (the vocabulary the CLI owns) and `items.json` (the values the
+ * published set already uses — `vocab`). The second one is what makes the fields
+ * concrete: a drafter picking 任务类型 from the ten the set already has cannot
+ * invent an eleventh spelling that no report can group by. Every list still has
+ * a free-text escape, because none of these fields is a constraint.
+ *
  * Read-only guests of the page are unaffected: nothing here runs until the
  * section is present, and nothing is sent anywhere. Drafts live in
  * localStorage; the export is a download.
@@ -16,11 +23,24 @@
   if (!F) return;
 
   var SCHEMA = null;
+  var VOCAB = null;          // items.json.vocab — what the published set already uses
   var ROWS = [];
   var LANG = "en";
   var editing = null;
   var DRAFT_KEY = "acnlb-draft-v1";
-  var DEFAULT_RUBRIC_TEXT = "";
+
+  // The rubric editor's view of `editing.rubric`. "rows" is the table; the raw
+  // textarea stays available because a rubric the row model cannot carry line for
+  // line must not be silently shortened.
+  var RUBRIC_MODE = "rows";
+  var RUBRIC_ROWS = [];
+  var RUBRIC_BLOCKED = [];
+
+  // Sentinel values for the escape-hatch options. Neither can collide with a real
+  // value in practice (`__` is not something a task type or a document path is
+  // called), and both are stripped before anything is written.
+  var CUSTOM = "__custom__";
+  var CLEAR = "__clear__";
 
   /* ---------- copy ---------- */
 
@@ -42,14 +62,48 @@
       close: "收起",
       id: "编号 id", track: "轨道", category: "类别 category",
       taskType: "任务类型 task_type", task: "任务 task",
-      jurisdiction: "管辖 jurisdiction", hasContext: "有附件 has_context",
-      documents: "附件路径（每行一个，相对 items 目录）",
-      authority: "法源依据 authority_basis（逗号／顿号分隔）",
+      jurisdiction: "管辖 jurisdiction",
+      noId: "（未填 id）",
+      idNext: "用下一个可用编号",
+      idHint: "文件名，只能用字母数字与 . _ -",
+      unset: "（未选）",
+      custom: "自定义…",
+      noVocab: "题集词汇未加载（items.json）：下拉是空的，直接手填即可。",
+      ctxLine: function (n) {
+        return "有附件 has_context: " + (n > 0 ? "true" : "false") + "（由附件数量推出，" + n + " 个路径）";
+      },
+      documents: "附件路径 documents",
+      docsHint: "每行一个，相对 items 目录；新附件要随 PR 一起提交",
+      docPick: "从已提交的附件里选…",
+      authority: "法源依据 authority_basis",
+      authorityHint: "逗号或顿号分隔；能从已有写法里选就选，能落到条号更好",
       notes: "备注 notes", prompt: "Prompt（模型收到的原话）",
-      gold: "参考答案 gold answer", rubric: "Rubric",
-      fillSkeleton: "填入骨架",
-      retrievalClass: "检索类别 class", retrievalItems: "检索基准（每行：层级 | 依据 | 说明）",
-      tierHint: "层级只能取 ",
+      gold: "参考答案 gold answer",
+      goldHint: "先写它，再写 rubric（设计稿 §3.6）；留空则写入 TODO 占位",
+      rubric: "Rubric",
+      startFrom: "起始模板",
+      tplClear: "清空 rubric",
+      modeRows: "表格",
+      modeRaw: "原文",
+      blockedRows: "这份 rubric 无法用表格完整表示，已切到原文模式：",
+      sum: function (n) { return "得分上限 " + n; },
+      kindAff: "得分点",
+      kindNeg: "扣分点",
+      colSection: "段",
+      colSub: "小节",
+      colPts: "分",
+      colText: "内容",
+      colCode: "代码",
+      colOps: "",
+      addPoint: "＋ 加得分点",
+      addNeg: "＋ 加扣分点",
+      rowsEmpty: "还没有得分点。先在上面套用轨道模板，或直接加一行。",
+      retTitle: "检索基准（仅 retrieval 轨道）",
+      retClass: "检索类别 class",
+      retHead: ["层级", "依据", "说明", ""],
+      retEmpty: "还没有检索基准。检索题至少要有一行。",
+      retHint: "层级只能是",
+      addGoldRow: "＋ 加一行",
       intake: "导出 INTAKE.md", files: "下载三件套", copyJson: "复制 JSON",
       checkOk: "校验通过，等同于 acnlb new 会写出的文件。",
       checkLint: "可作为草稿导出；注意：",
@@ -69,6 +123,7 @@
       confirmClear: "清空全部草稿？此操作不可撤销。",
       draftSaved: function (n) { return "草稿 " + n + " 条，已存在本机浏览器。"; },
       noSchema: "schema 未加载",
+      noRubricLayout: "schema.json 里没有 rubric 版式，表格模式不可用。",
       docsWarn: "记得把附件一起放进 items 目录。"
     },
     en: {
@@ -88,14 +143,48 @@
       close: "Collapse",
       id: "id", track: "track", category: "category",
       taskType: "task_type", task: "task",
-      jurisdiction: "jurisdiction", hasContext: "has_context",
-      documents: "Document paths (one per line, relative to the items dir)",
-      authority: "authority_basis (comma separated)",
+      jurisdiction: "jurisdiction",
+      noId: "(no id)",
+      idNext: "Use the next free id",
+      idHint: "a file name — letters, digits and . _ - only",
+      unset: "(none)",
+      custom: "Other…",
+      noVocab: "Item-set vocabulary not loaded (items.json): the lists are empty, just type.",
+      ctxLine: function (n) {
+        return "has_context: " + (n > 0 ? "true" : "false") + " — derived from the document list (" + n + " path(s))";
+      },
+      documents: "Document paths",
+      docsHint: "one per line, relative to the items dir; new files must be committed too",
+      docPick: "Pick a document the set already ships…",
+      authority: "authority_basis",
+      authorityHint: "comma separated; prefer a spelling the set already uses, with an article number if you have one",
       notes: "notes", prompt: "Prompt (the exact text the model receives)",
-      gold: "Gold answer", rubric: "Rubric",
-      fillSkeleton: "Fill with skeleton",
-      retrievalClass: "Retrieval class", retrievalItems: "Retrieval gold (one per line: tier | ref | note)",
-      tierHint: "tiers: ",
+      gold: "Gold answer",
+      goldHint: "write it before the rubric (design doc §3.6); left blank, a TODO placeholder is written",
+      rubric: "Rubric",
+      startFrom: "Start from",
+      tplClear: "Clear the rubric",
+      modeRows: "Table",
+      modeRaw: "Markdown",
+      blockedRows: "This rubric cannot be shown as a table without losing a line; using the markdown editor:",
+      sum: function (n) { return "ceiling " + n; },
+      kindAff: "Affirmative",
+      kindNeg: "Negative",
+      colSection: "Part",
+      colSub: "Sub",
+      colPts: "Pts",
+      colText: "Text",
+      colCode: "Code",
+      colOps: "",
+      addPoint: "+ Add point",
+      addNeg: "+ Add deduction",
+      rowsEmpty: "No points yet. Apply a track template above, or add a row.",
+      retTitle: "Retrieval gold (retrieval track only)",
+      retClass: "Retrieval class",
+      retHead: ["Tier", "Ref", "Note", ""],
+      retEmpty: "No retrieval gold yet. A retrieval item needs at least one row.",
+      retHint: "tier must be one of",
+      addGoldRow: "+ Add row",
       intake: "Export INTAKE.md", files: "Download 3 files", copyJson: "Copy JSON",
       checkOk: "Valid — identical to what `acnlb new` writes.",
       checkLint: "Exportable as a draft; note: ",
@@ -115,6 +204,7 @@
       confirmClear: "Clear the whole draft? This cannot be undone.",
       draftSaved: function (n) { return n + " draft item(s), stored in this browser."; },
       noSchema: "schema not loaded",
+      noRubricLayout: "schema.json carries no rubric layout, so the table editor is unavailable.",
       docsWarn: "Remember to put the attachments in the items dir too."
     }
   };
@@ -250,7 +340,7 @@
     body.appendChild(wrap);
   }
 
-  /* ---------- editor ---------- */
+  /* ---------- field widgets ---------- */
 
   function field(label, node, hint) {
     var f = el("label", "field");
@@ -268,17 +358,121 @@
     return n;
   }
 
+  function layout() { return (SCHEMA && SCHEMA.rubric_layout) || null; }
+
+  function vocabList(key) {
+    return (VOCAB && Array.isArray(VOCAB[key])) ? VOCAB[key] : [];
+  }
+
+  function select(blankText, pairs) {
+    var sel = document.createElement("select");
+    if (blankText != null) {
+      var blank = document.createElement("option");
+      blank.value = "";
+      blank.textContent = blankText;
+      sel.appendChild(blank);
+    }
+    (pairs || []).forEach(function (p) {
+      var o = document.createElement("option");
+      o.value = p.value;
+      o.textContent = p.label == null ? p.value : p.label;
+      sel.appendChild(o);
+    });
+    return sel;
+  }
+
+  function labelled(list) {
+    return (list || []).map(function (v) { return { value: v, label: v }; });
+  }
+
+  /* A closed list plus an escape hatch.
+   *
+   * The list is "what the published set already uses", not a constraint: the
+   * schema keeps these fields free strings on purpose, because the set may grow
+   * a category nobody anticipated. So the last option hands the field to a text
+   * input. Without the escape the form is a cage; without the list every drafter
+   * picks their own spelling and no report can group by 任务类型 afterwards. */
+  function combo(value, list, onChange) {
+    var wrap = el("div", "stack");
+    var known = list.slice();
+    if (value && known.indexOf(value) < 0) known = [value].concat(known);
+
+    var sel = select(tx("unset"), labelled(known).concat([{ value: CUSTOM, label: tx("custom") }]));
+    var free = document.createElement("input");
+    free.type = "text";
+    free.className = "text-in";
+    free.value = value || "";
+
+    function emit() {
+      var v = sel.value === CUSTOM ? free.value.trim() : sel.value;
+      value = v;
+      sync();
+      onChange(v);
+    }
+
+    function sync() {
+      var v = (value || "").trim();
+      sel.value = (v && known.indexOf(v) >= 0) ? v : (v ? CUSTOM : "");
+      free.hidden = sel.value !== CUSTOM;
+      if (free.hidden) free.value = v;
+    }
+
+    sel.addEventListener("change", function () {
+      if (sel.value === CUSTOM) { free.hidden = false; free.focus(); emit(); }
+      else emit();
+    });
+    free.addEventListener("input", emit);
+
+    wrap.appendChild(sel);
+    wrap.appendChild(free);
+    sync();
+    return wrap;
+  }
+
+  /* A list of known-good values that does not close the field: the browser's own
+   * suggestions, so an existing spelling is one keystroke away without making a
+   * new one impossible. */
+  function datalistField(field_, value, list) {
+    var n = input(field_, "text");
+    n.value = value || "";
+    if (!list.length) return n;
+    var dl = el("datalist");
+    dl.id = "dl-" + field_;
+    list.forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v;
+      dl.appendChild(o);
+    });
+    n.setAttribute("list", dl.id);
+    var wrap = el("div", "stack");
+    wrap.appendChild(n);
+    wrap.appendChild(dl);
+    return wrap;
+  }
+
+  /* ---------- editor ---------- */
+
   function openEditor(row) {
     editing = row;
     var host = document.getElementById("row-editor");
     if (!host) return;
     host.hidden = false;
     host.textContent = "";
+    RUBRIC_MODE = "rows";
+    RUBRIC_ROWS = [];
+    RUBRIC_BLOCKED = [];
 
-    var res = checkRow(row);
+    // Seed the rubric from the track's template so the table, the exported
+    // markdown and what `acnlb new` would have written are the same text. Left
+    // empty, the CLI falls back to the generic skeleton and the page would be
+    // showing something else.
+    if (SCHEMA && !row.rubric) {
+      row.rubric = F.rubricTemplate(SCHEMA, row.track, row.id || "", row.task || "");
+      saveDraft();
+    }
 
     var bar = el("div", "editor-bar");
-    bar.appendChild(el("h3", null, row.id || "（未填 id）"));
+    bar.appendChild(el("h3", null, row.id || tx("noId")));
     var close = el("button", "link-btn", tx("close"));
     close.type = "button";
     close.addEventListener("click", closeEditor);
@@ -286,13 +480,25 @@
     host.appendChild(bar);
 
     var grid = el("div", "grid");
-    var text = ["id", "category", "task_type", "task", "jurisdiction", "authority_basis_text", "notes"];
-    text.forEach(function (key) {
-      var n = input(key, key === "notes" ? "area" : "text");
-      n.value = row[key] || "";
-      if (key === "notes") n.rows = 3;
-      grid.appendChild(field(tx(key === "authority_basis_text" ? "authority" : key), n));
+
+    var idNode = input("id", "text");
+    idNode.value = row.id || "";
+    var idWrap = el("div", "stack");
+    idWrap.appendChild(idNode);
+    var idBtn = el("button", "link-btn", tx("idNext"));
+    idBtn.type = "button";
+    idBtn.addEventListener("click", function () {
+      var next = F.nextId(VOCAB, { track: row.track, category: row.category });
+      if (!next) return log([tx("noVocab")], true);
+      row.id = next;
+      idNode.value = next;
+      saveDraft();
+      // The rubric's title line carries the id, so it has to be rewritten too.
+      resyncRubricTitle();
+      openEditor(row);
     });
+    idWrap.appendChild(idBtn);
+    grid.appendChild(field(tx("id"), idWrap, tx("idHint")));
 
     var trackSel = document.createElement("select");
     trackSel.setAttribute("data-field", "track");
@@ -305,72 +511,140 @@
     trackSel.value = row.track;
     grid.appendChild(field(tx("track"), trackSel));
 
-    var ctx = document.createElement("input");
-    ctx.type = "checkbox";
-    ctx.setAttribute("data-field", "has_context");
-    ctx.checked = !!row.has_context;
-    grid.appendChild(field(tx("hasContext"), ctx));
+    var taskNode = input("task", "text");
+    taskNode.value = row.task || "";
+    grid.appendChild(field(tx("task"), taskNode));
+
+    // Everything below is a closed list with an escape hatch, fed by items.json.
+    [["category", tx("category"), "categories"],
+     ["task_type", tx("taskType"), "task_types"],
+     ["jurisdiction", tx("jurisdiction"), "jurisdictions"]
+    ].forEach(function (triple) {
+      var key = triple[0];
+      grid.appendChild(field(triple[1], combo(row[key] || "", vocabList(triple[2]), function (v) {
+        row[key] = v;
+        saveDraft();
+        refresh();
+      })));
+    });
     host.appendChild(grid);
 
+    var docsWrap = el("div", "stack");
     var docs = input("documents", "area");
     docs.rows = 3;
     docs.value = (row.documents || []).join("\n");
-    host.appendChild(field(tx("documents"), docs));
+    docsWrap.appendChild(docs);
+    if (vocabList("documents").length) {
+      var docPick = select(tx("docPick"), labelled(vocabList("documents")));
+      docPick.className = "picker";
+      docPick.addEventListener("change", function () {
+        var v = docPick.value;
+        docPick.value = "";
+        if (!v) return;
+        var cur = (docs.value || "").split("\n").map(function (s) { return s.trim(); })
+          .filter(function (s) { return s.length > 0; });
+        if (cur.indexOf(v) < 0) cur.push(v);
+        docs.value = cur.join("\n");
+        row.documents = cur;
+        saveDraft();
+        refresh();
+      });
+      docsWrap.appendChild(docPick);
+    }
+    host.appendChild(field(tx("documents"), docsWrap, tx("docsHint")));
+
+    // has_context is derived, so it is shown rather than asked. A checkbox next
+    // to the document list is a second source of truth that can only disagree.
+    var ctx = el("div", "ctx-line");
+    host.appendChild(ctx);
+
+    host.appendChild(field(tx("authority"),
+      datalistField("authority_basis_text", row.authority_basis_text || "", vocabList("authority_basis")),
+      tx("authorityHint")));
 
     var promptArea = input("prompt", "area");
     promptArea.value = row.prompt || "";
     host.appendChild(field(tx("prompt"), promptArea));
 
-    var goldArea = input("gold", "area");
-    goldArea.value = row.gold || "";
-    host.appendChild(field(tx("gold"), goldArea));
+    host.appendChild(field(tx("gold"), goldArea(row), tx("goldHint")));
 
+    var notesArea = input("notes", "area");
+    notesArea.rows = 3;
+    notesArea.value = row.notes || "";
+    host.appendChild(field(tx("notes"), notesArea));
+
+    /* ---- rubric ---- */
+
+    var rubricWrap = el("div", "field");
     var rubricHead = el("div", "field-k");
     rubricHead.appendChild(document.createTextNode(tx("rubric")));
-    var skeletonBtn = el("button", "link-btn", tx("fillSkeleton"));
-    skeletonBtn.type = "button";
-    skeletonBtn.addEventListener("click", function () {
-      var tpl = (SCHEMA && SCHEMA.default_rubric) || DEFAULT_RUBRIC_TEXT;
-      row.rubric = F.defaultRubric(SCHEMA, row.id || "<id>", row.task || "<task>");
-      rubricArea.value = row.rubric;
-      refresh();
-    });
     rubricHead.appendChild(document.createTextNode("  "));
-    rubricHead.appendChild(skeletonBtn);
-    var rubricWrap = el("div", "field");
+    var tplSel = select(tx("startFrom"),
+      ((SCHEMA && SCHEMA.valid_tracks) || []).map(function (t) {
+        return { value: t, label: t + (SCHEMA.track_labels[t] ? " · " + SCHEMA.track_labels[t] : "") };
+      }).concat([{ value: CLEAR, label: tx("tplClear") }]));
+    tplSel.className = "picker";
+    tplSel.addEventListener("change", function () {
+      var v = tplSel.value;
+      tplSel.value = "";
+      if (!v) return;
+      applyTemplate(v);
+    });
+    rubricHead.appendChild(tplSel);
+
+    var modeBtn = el("button", "link-btn", tx("modeRaw"));
+    modeBtn.type = "button";
+    modeBtn.addEventListener("click", function () {
+      if (RUBRIC_MODE === "raw" && RUBRIC_BLOCKED.length) return;
+      RUBRIC_MODE = RUBRIC_MODE === "raw" ? "rows" : "raw";
+      if (RUBRIC_MODE === "rows") row.rubric = rubricArea.value;
+      saveDraft();
+      renderRubric();
+    });
+    rubricHead.appendChild(document.createTextNode(" "));
+    rubricHead.appendChild(modeBtn);
+    var sumSpan = el("span", "field-h", "");
+    rubricHead.appendChild(document.createTextNode("  "));
+    rubricHead.appendChild(sumSpan);
     rubricWrap.appendChild(rubricHead);
+
+    var blockNote = el("p", "check-warn");
+    blockNote.hidden = true;
+    rubricWrap.appendChild(blockNote);
+
+    var rubricBody = el("div", "rubric-body");
+    rubricWrap.appendChild(rubricBody);
+
     var rubricArea = input("rubric", "area");
     rubricArea.className = "mono-area";
-    rubricArea.rows = 14;
+    rubricArea.rows = 16;
     rubricArea.value = row.rubric || "";
     rubricWrap.appendChild(rubricArea);
+
     rubricWrap.appendChild(el("span", "field-h",
       (SCHEMA ? SCHEMA.negatives.map(function (n) { return "[" + n.code + "]"; }).join(" ") : "")));
     host.appendChild(rubricWrap);
 
-    var retrievalWrap = el("div", "field retrieval-fields");
-    if (row.track !== "retrieval") retrievalWrap.hidden = true;
+    /* ---- retrieval gold ---- */
+
+    var retWrap = el("div", "field ret-field");
+    retWrap.hidden = row.track !== "retrieval";
+    var retBody = el("div", "ret-body");
     if (row.track === "retrieval") {
+      retWrap.appendChild(el("div", "field-k", tx("retTitle")));
       var classSel = document.createElement("select");
       classSel.setAttribute("data-field", "retrieval_class");
-      ((SCHEMA && SCHEMA.retrieval_classes) || ["statute", "similar_case", "document"]).forEach(function (c) {
+      ((SCHEMA && SCHEMA.retrieval_classes) || []).forEach(function (c) {
         var o = document.createElement("option");
         o.value = c;
         o.textContent = c;
         classSel.appendChild(o);
       });
-      classSel.value = row.retrieval_class || "statute";
-      retrievalWrap.appendChild(field(tx("retrievalClass"), classSel));
-
-      var itemsArea = input("retrieval_items", "area");
-      itemsArea.rows = 4;
-      itemsArea.value = (row.retrieval_items || []).map(function (g) {
-        return g.tier + " | " + g.ref + " | " + (g.note || "");
-      }).join("\n");
-      retrievalWrap.appendChild(field(tx("retrievalItems"), itemsArea,
-        tx("tierHint") + ((SCHEMA && SCHEMA.valid_tiers) || []).join(" / ")));
+      classSel.value = row.retrieval_class || ((SCHEMA && SCHEMA.retrieval_classes) || ["statute"])[0];
+      retWrap.appendChild(field(tx("retClass"), classSel));
+      retWrap.appendChild(retBody);
     }
-    host.appendChild(retrievalWrap);
+    host.appendChild(retWrap);
 
     var check = el("div", "editor-check");
     host.appendChild(check);
@@ -409,6 +683,284 @@
     var logBox = document.getElementById("builder-log");
     if (logBox) logBox.hidden = true;
 
+    /* ---- rubric editor ---- */
+
+    function ceiling() {
+      return F.fmtPoints(F.parseRubric(row.rubric || "").maxPositivePoints);
+    }
+
+    function applyTemplate(track) {
+      if (track === CLEAR) {
+        row.rubric = "";
+        RUBRIC_MODE = "rows";
+      } else {
+        row.rubric = F.rubricTemplate(SCHEMA, track, row.id || "", row.task || "");
+        RUBRIC_MODE = "rows";
+      }
+      saveDraft();
+      renderRubric();
+      refresh();
+    }
+
+    /* Rows are the editor and `row.rubric` is what gets exported, so every edit
+     * writes the markdown back out. If the layout is missing this refuses rather
+     * than inventing headings — a page that writes a format the CLI cannot read
+     * is worse than a page that says it is broken. */
+    function syncRubric() {
+      try {
+        row.rubric = F.rubricFromRows(RUBRIC_ROWS, {
+          layout: layout(), id: row.id || "", task: row.task || ""
+        });
+      } catch (e) {
+        return log([tx("noRubricLayout")], true);
+      }
+      saveDraft();
+      refresh();
+    }
+
+    /* Rewrite only the title line, keeping the rest byte for byte. Used when the
+     * id changes, because the title carries it. */
+    function resyncRubricTitle() {
+      if (!row.rubric || !layout()) return;
+      RUBRIC_MODE = "rows";
+      RUBRIC_ROWS = F.rubricRows(row.rubric, layout(), SCHEMA).rows;
+      if (!RUBRIC_ROWS.length) return;
+      row.rubric = F.rubricFromRows(RUBRIC_ROWS, {
+        layout: layout(), id: row.id || "", task: row.task || ""
+      });
+    }
+
+    function textCell(value, onChange) {
+      var td = el("td");
+      var n = document.createElement("textarea");
+      n.rows = 2;
+      n.value = value;
+      n.addEventListener("input", function () { onChange(n.value); });
+      td.appendChild(n);
+      return td;
+    }
+
+    function pointsCell(r) {
+      var td = el("td");
+      var n = document.createElement("input");
+      n.type = "number";
+      n.step = "0.5";
+      n.min = "0";
+      n.className = "num-input";
+      n.value = F.fmtPoints(r.points);
+      n.addEventListener("input", function () {
+        var v = parseFloat(n.value);
+        r.points = isNaN(v) ? 0 : Math.abs(v);
+        syncRubric();
+      });
+      td.appendChild(n);
+      return td;
+    }
+
+    function rowOps(r, rerender) {
+      var td = el("td", "row-ops");
+      var del = el("button", "link-btn", tx("del"));
+      del.type = "button";
+      del.addEventListener("click", function () {
+        RUBRIC_ROWS.splice(RUBRIC_ROWS.indexOf(r), 1);
+        syncRubric();
+        rerender();
+      });
+      td.appendChild(del);
+      return td;
+    }
+
+    function tableOf(headers, rows) {
+      var table = el("table", "rubric-table");
+      var thead = document.createElement("thead");
+      var htr = document.createElement("tr");
+      headers.forEach(function (h) { htr.appendChild(el("th", null, h)); });
+      thead.appendChild(htr);
+      table.appendChild(thead);
+      var tb = el("tbody");
+      rows.forEach(function (tr) { tb.appendChild(tr); });
+      table.appendChild(tb);
+      var wrap = el("div", "table-wrap");
+      wrap.appendChild(table);
+      return wrap;
+    }
+
+    function affirmativeBlock() {
+      var block = el("div", "rubric-block");
+      var head = el("div", "rubric-head");
+      head.appendChild(el("span", null, tx("kindAff")));
+      var add = el("button", "link-btn", tx("addPoint"));
+      add.type = "button";
+      add.addEventListener("click", function () {
+        RUBRIC_ROWS.push(F.blankRubricRow("affirmative", SCHEMA, layout()));
+        syncRubric();
+        renderRubric();
+      });
+      head.appendChild(add);
+      block.appendChild(head);
+
+      var mine = RUBRIC_ROWS.filter(function (r) { return r.kind === "affirmative"; });
+      if (!mine.length) {
+        block.appendChild(el("p", "muted", tx("rowsEmpty")));
+        return block;
+      }
+
+      var rows = mine.map(function (r) {
+        var tr = document.createElement("tr");
+
+        var secTd = el("td");
+        var secSel = select(null, ((layout() || {}).sections || []).map(function (s) {
+          return { value: s.key, label: s.title };
+        }));
+        secSel.value = r.section;
+        secSel.addEventListener("change", function () {
+          r.section = secSel.value;
+          syncRubric();
+          renderRubric();
+        });
+        secTd.appendChild(secSel);
+        tr.appendChild(secTd);
+
+        tr.appendChild(textCell(r.subsection || "", function (v) { r.subsection = v; syncRubric(); }));
+        tr.appendChild(pointsCell(r));
+        tr.appendChild(textCell(r.text || "", function (v) { r.text = v; syncRubric(); }));
+        tr.appendChild(rowOps(r, renderRubric));
+        return tr;
+      });
+      block.appendChild(tableOf(
+        [tx("colSection"), tx("colSub"), tx("colPts"), tx("colText"), tx("colOps")], rows));
+      return block;
+    }
+
+    function negativeBlock() {
+      var block = el("div", "rubric-block");
+      var head = el("div", "rubric-head");
+      head.appendChild(el("span", null, tx("kindNeg")));
+      var add = el("button", "link-btn", tx("addNeg"));
+      add.type = "button";
+      add.addEventListener("click", function () {
+        RUBRIC_ROWS.push(F.blankRubricRow("negative", SCHEMA, layout()));
+        syncRubric();
+        renderRubric();
+      });
+      head.appendChild(add);
+      block.appendChild(head);
+
+      var mine = RUBRIC_ROWS.filter(function (r) { return r.kind === "negative"; });
+      if (!mine.length) return block;
+
+      var codes = ((SCHEMA && SCHEMA.negatives) || []);
+      var rows = mine.map(function (r) {
+        var tr = document.createElement("tr");
+
+        var codeTd = el("td");
+        var codeSel = select(null, codes.map(function (n) {
+          return { value: n.code, label: n.code };
+        }));
+        codeSel.value = r.code;
+        codeSel.addEventListener("change", function () {
+          r.code = codeSel.value;
+          syncRubric();
+        });
+        codeTd.appendChild(codeSel);
+        tr.appendChild(codeTd);
+
+        tr.appendChild(pointsCell(r));
+        tr.appendChild(textCell(r.text || "", function (v) { r.text = v; syncRubric(); }));
+        tr.appendChild(rowOps(r, renderRubric));
+        return tr;
+      });
+      block.appendChild(tableOf([tx("colCode"), tx("colPts"), tx("colText"), tx("colOps")], rows));
+      return block;
+    }
+
+    function rawArea() {
+      rubricArea.value = row.rubric || "";
+      return rubricArea;
+    }
+
+    function renderRubric() {
+      var lay = layout();
+      var parsed = lay
+        ? F.rubricRows(row.rubric || "", lay, SCHEMA)
+        : { rows: [], blocked: [tx("noRubricLayout")] };
+      RUBRIC_BLOCKED = parsed.blocked;
+      RUBRIC_ROWS = parsed.rows;
+      // A shape the table cannot carry goes to the raw editor, and stays there:
+      // approximating it is how a rubric quietly loses a line.
+      if (RUBRIC_BLOCKED.length) RUBRIC_MODE = "raw";
+
+      var raw = RUBRIC_MODE === "raw";
+      modeBtn.textContent = raw ? tx("modeRows") : tx("modeRaw");
+      blockNote.hidden = !RUBRIC_BLOCKED.length;
+      blockNote.textContent = RUBRIC_BLOCKED.length ? tx("blockedRows") + RUBRIC_BLOCKED.join("；") : "";
+      sumSpan.textContent = tx("sum", ceiling());
+
+      rubricBody.textContent = "";
+      if (raw) {
+        rubricBody.appendChild(rawArea());
+      } else {
+        rubricBody.appendChild(affirmativeBlock());
+        rubricBody.appendChild(negativeBlock());
+      }
+    }
+
+    /* ---- retrieval gold editor ---- */
+
+    function renderRetrieval() {
+      if (row.track !== "retrieval") return;
+      retBody.textContent = "";
+      var items = row.retrieval_items || [];
+      var tiers = (SCHEMA && SCHEMA.valid_tiers) || [];
+
+      if (items.length) {
+        var rows = items.map(function (g) {
+          var tr = document.createElement("tr");
+
+          var tierTd = el("td");
+          var tierSel = select(null, labelled(tiers));
+          tierSel.value = g.tier;
+          tierSel.addEventListener("change", function () {
+            g.tier = tierSel.value;
+            saveDraft();
+            refresh();
+          });
+          tierTd.appendChild(tierSel);
+          tr.appendChild(tierTd);
+
+          tr.appendChild(textCell(g.ref || "", function (v) { g.ref = v; saveDraft(); refresh(); }));
+          tr.appendChild(textCell(g.note || "", function (v) { g.note = v; saveDraft(); refresh(); }));
+
+          var ops = el("td", "row-ops");
+          var del = el("button", "link-btn", tx("del"));
+          del.type = "button";
+          del.addEventListener("click", function () {
+            row.retrieval_items.splice(row.retrieval_items.indexOf(g), 1);
+            saveDraft();
+            renderRetrieval();
+            refresh();
+          });
+          ops.appendChild(del);
+          tr.appendChild(ops);
+          return tr;
+        });
+        retBody.appendChild(tableOf(tx("retHead"), rows));
+      } else {
+        retBody.appendChild(el("p", "muted", tx("retEmpty")));
+      }
+
+      var add = el("button", "link-btn", tx("addGoldRow"));
+      add.type = "button";
+      add.addEventListener("click", function () {
+        row.retrieval_items = (row.retrieval_items || []).concat([{ tier: tiers[0] || "", ref: "", note: "" }]);
+        saveDraft();
+        renderRetrieval();
+        refresh();
+      });
+      retBody.appendChild(add);
+      retBody.appendChild(el("span", "field-h", tx("retHint") + " " + tiers.join(" / ")));
+    }
+
     function refresh() {
       var r = checkRow(row);
       check.textContent = "";
@@ -421,18 +973,27 @@
         r.errors.forEach(function (e) { check.appendChild(el("div", null, e)); });
       }
       var title = host.querySelector("h3");
-      if (title) title.textContent = row.id || "（未填 id）";
+      if (title) title.textContent = row.id || tx("noId");
+      ctx.textContent = tx("ctxLine", (row.documents || []).length);
+      sumSpan.textContent = tx("sum", ceiling());
     }
 
     function bind(node) {
       var key = node.getAttribute("data-field");
       var handler = function () {
-        if (key === "has_context") row[key] = node.checked;
-        else if (key === "documents") row.documents = node.value.split("\n").map(function (s) { return s.trim(); })
-          .filter(function (s) { return s.length > 0; });
-        else if (key === "retrieval_items") row.retrieval_items = parseGoldLines(node.value);
-        else if (key === "track") { row.track = node.value; saveDraft(); openEditor(row); return; }
-        else row[key] = node.value;
+        if (key === "documents") {
+          row.documents = node.value.split("\n").map(function (s) { return s.trim(); })
+            .filter(function (s) { return s.length > 0; });
+        } else if (key === "track") {
+          row.track = node.value;
+          saveDraft();
+          openEditor(row);
+          return;
+        } else if (key === "rubric") {
+          row.rubric = node.value;
+        } else {
+          row[key] = node.value;
+        }
         saveDraft();
         refresh();
       };
@@ -441,23 +1002,24 @@
     }
 
     host.querySelectorAll("[data-field]").forEach(bind);
+
+    // The retrieval table is only built when the row is on that track; a row
+    // switched to `retrieval` goes back through openEditor and lands here again.
+    if (row.track === "retrieval") renderRetrieval();
+    renderRubric();
     refresh();
   }
 
-  function parseGoldLines(text) {
-    var out = [];
-    text.split("\n").forEach(function (line) {
-      var s = line.trim();
-      if (!s) return;
-      var parts = s.split("|").map(function (p) { return p.trim(); });
-      if (parts.length < 2) return;
-      out.push({ tier: parts[0], ref: parts[1], note: parts.length > 2 ? parts[2] : "" });
-    });
-    return out;
+  function goldArea(row) {
+    var a = input("gold", "area");
+    a.value = row.gold || "";
+    return a;
   }
 
   function closeEditor() {
     editing = null;
+    RUBRIC_ROWS = [];
+    RUBRIC_BLOCKED = [];
     var host = document.getElementById("row-editor");
     if (host) { host.hidden = true; host.textContent = ""; }
     renderRows();
@@ -476,7 +1038,7 @@
       if (!row.id && !row.task && !row.prompt) { skipped.push("（空白表单）"); return; }
       var res = checkRow(row);
       if (!res.ok && b.intake.errors.length) {
-        skipped.push((row.id || "（未填 id）") + "：" + b.intake.errors.join("；"));
+        skipped.push((row.id || tx("noId")) + "：" + b.intake.errors.join("；"));
         return;
       }
       ROWS.push(row);
@@ -546,7 +1108,7 @@
     var good = 0;
     ROWS.forEach(function (row) {
       var res = checkRow(row);
-      if (!res.ok) { rejected.push((row.id || "（未填 id）") + "：" + res.errors.join("；")); return; }
+      if (!res.ok) { rejected.push((row.id || tx("noId")) + "：" + res.errors.join("；")); return; }
       F.assembleFiles(res.built).forEach(function (f) { entries.push(f); });
       good++;
     });
@@ -643,11 +1205,22 @@
     var section = document.getElementById("contribute");
     if (!section) return;
     var status = document.getElementById("builder-status");
-    fetch("schema.json", { cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function (s) {
-        SCHEMA = s;
-        DEFAULT_RUBRIC_TEXT = s.default_rubric || "";
+
+    function json(name) {
+      return fetch(name, { cache: "no-store" }).then(function (r) {
+        if (!r.ok) throw new Error(name + ": " + r.status);
+        return r.json();
+      });
+    }
+
+    // items.json is the second source, and it is allowed to be absent: the lists
+    // go empty and every field is still typeable. schema.json is not optional —
+    // without it the form cannot tell what the CLI accepts.
+    Promise.all([json("schema.json"), json("items.json").catch(function () { return null; })])
+      .then(function (pair) {
+        SCHEMA = pair[0];
+        VOCAB = (pair[1] && pair[1].vocab) || null;
+        if (!VOCAB && status) status.textContent = tx("noVocab");
         loadDraft();
         renderRows();
         bind();

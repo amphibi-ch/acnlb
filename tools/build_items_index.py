@@ -3,6 +3,14 @@
 The site has no build step: index.html + app.js read this file to render the
 item table in the "测评题集" section. Re-run it whenever items change.
 
+It also carries `vocab`: the values the set already uses for `category`,
+`task_type`, `jurisdiction`, `authority_basis` and document paths, plus the next
+free id per prefix. Those fields are free strings in the schema on purpose — the
+set may grow a category nobody anticipated — so the answer to "what should I put
+here" cannot come from the schema. It comes from the items that already exist,
+and it is derived in `acnlb.vocab` so the web form and the issue-to-PR tool
+cannot disagree about what the next `core-tx-` id is.
+
 Run:  python tools/build_items_index.py
       python tools/build_items_index.py --items items/real --out site/items.json
 """
@@ -18,6 +26,7 @@ if str(ROOT) not in sys.path:  # tools/ is not a package; run as a script
     sys.path.insert(0, str(ROOT))
 
 from acnlb.schema import TRACK_LABELS  # noqa: E402
+from acnlb.vocab import build_vocab  # noqa: E402
 
 
 def rel(path: Path) -> str:
@@ -29,10 +38,12 @@ def rel(path: Path) -> str:
 
 def build(items_dir: Path) -> dict:
     items = []
+    raws: list[dict] = []
     for path in sorted(items_dir.glob("*.json")):
         if path.name.startswith("_"):  # _template.item.json etc.
             continue
         d = json.loads(path.read_text(encoding="utf-8"))
+        raws.append(d)
         track = d.get("track") or ""
         items.append({
             "id": d.get("id") or path.stem,
@@ -50,6 +61,7 @@ def build(items_dir: Path) -> dict:
         "count": len(items),
         "total_points": sum(i["points"] for i in items),
         "items": items,
+        "vocab": build_vocab(raws),
     }
 
 

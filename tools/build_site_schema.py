@@ -28,6 +28,8 @@ from acnlb import SCHEMA_VERSION  # noqa: E402
 from acnlb import negatives  # noqa: E402
 from acnlb.schema import (  # noqa: E402
     DEFAULT_TIER_POINTS,
+    ID_HINT,
+    ID_PATTERN,
     REQUIRED_FIELDS,
     RETRIEVAL_CLASSES,
     TRACK_LABELS,
@@ -39,12 +41,9 @@ from acnlb.scaffold import (  # noqa: E402
     GOLD_SECTIONS,
     INTAKE_SECTIONS,
     RETRIEVAL_SECTIONS,
+    RUBRIC_LAYOUT,
+    RUBRIC_TEMPLATES,
 )
-
-# Soft hint only: `id` is not constrained by the schema, but it becomes a file
-# name, so the form warns on anything a shell would rather not see.
-ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
-ID_HINT = "<track>-<缩写>-<编号>，如 core-tx-0011"
 
 
 def build() -> dict:
@@ -68,6 +67,8 @@ def build() -> dict:
             for c in negatives.TAXONOMY
         ],
         "default_rubric": DEFAULT_RUBRIC,
+        "rubric_templates": RUBRIC_TEMPLATES,
+        "rubric_layout": RUBRIC_LAYOUT,
         "intake_sections": list(INTAKE_SECTIONS),
         "gold_sections": list(GOLD_SECTIONS),
         "retrieval_sections": list(RETRIEVAL_SECTIONS),
@@ -76,6 +77,10 @@ def build() -> dict:
             "item_suffix": ".json",
             "rubric_suffix": ".rubric.md",
         },
+        # Soft rules, deliberately: `id` and `document.path` are free strings in
+        # the item schema, and these are the two places it is turned into a path.
+        # The form applies the same checks the CLI does so the page cannot accept
+        # what `validate` would refuse.
         "id_pattern": ID_PATTERN,
         "id_hint": ID_HINT,
     }

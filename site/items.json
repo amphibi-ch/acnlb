@@ -144,5 +144,121 @@
         "《民法典》"
       ]
     }
-  ]
+  ],
+  "vocab": {
+    "categories": [
+      "Litigation",
+      "Transaction",
+      "Retrieval",
+      "Workflow"
+    ],
+    "task_types": [
+      "案例分析 (请求权基础)",
+      "法律检索报告 (数据出境)",
+      "诉讼文书起草 (起诉状)",
+      "合同审查与风险点识别",
+      "合同起草 (保密协议)",
+      "法条检索",
+      "类案检索",
+      "要素抽取 (12 fields → JSON)",
+      "风险点清单 (fixed table)",
+      "尽职调查清单"
+    ],
+    "jurisdictions": [
+      "CN-mainland"
+    ],
+    "authority_basis": [
+      "《民法典》",
+      "《产品质量法》",
+      "《网络安全法》",
+      "《数据安全法》",
+      "《个人信息保护法》",
+      "《网络数据安全管理条例》",
+      "《数据出境安全评估办法》",
+      "《促进和规范数据跨境流动规定》",
+      "《民事诉讼法》(2023修正) 第124条",
+      "《公司法》(2023修订)",
+      "《民法典担保制度解释》",
+      "《民间借贷司法解释》(2020第二次修正)",
+      "《反不正当竞争法》(2019修正)",
+      "《民法典》第585条",
+      "《全国法院民商事审判工作会议纪要》(九民纪要) 第5条"
+    ],
+    "documents": [
+      "docs/core-lit-0003-water-heater.md",
+      "docs/core-lit-0005-sale-dispute.md",
+      "docs/core-tx-0001-loan-guarantee.md",
+      "docs/core-tx-0002-deal-context.md",
+      "docs/ret-0010-candidate-cases.md",
+      "docs/wf-0006-equipment-purchase.md",
+      "docs/wf-0007-tech-service.md",
+      "docs/wf-0008-dd-pack-01.md",
+      "docs/wf-0008-dd-pack-02.md",
+      "docs/wf-0008-dd-pack-03.md"
+    ],
+    "id_prefixes": [
+      {
+        "prefix": "core-lit-",
+        "next": "core-lit-0006",
+        "count": 3,
+        "tracks": [
+          "core"
+        ],
+        "categories": [
+          "Litigation"
+        ],
+        "examples": [
+          "core-lit-0003",
+          "core-lit-0004",
+          "core-lit-0005"
+        ]
+      },
+      {
+        "prefix": "core-tx-",
+        "next": "core-tx-0003",
+        "count": 2,
+        "tracks": [
+          "core"
+        ],
+        "categories": [
+          "Transaction"
+        ],
+        "examples": [
+          "core-tx-0001",
+          "core-tx-0002"
+        ]
+      },
+      {
+        "prefix": "ret-",
+        "next": "ret-0011",
+        "count": 2,
+        "tracks": [
+          "retrieval"
+        ],
+        "categories": [
+          "Retrieval"
+        ],
+        "examples": [
+          "ret-0009",
+          "ret-0010"
+        ]
+      },
+      {
+        "prefix": "wf-",
+        "next": "wf-0009",
+        "count": 3,
+        "tracks": [
+          "workflows"
+        ],
+        "categories": [
+          "Workflow"
+        ],
+        "examples": [
+          "wf-0006",
+          "wf-0007",
+          "wf-0008"
+        ]
+      }
+    ]
+  }
 }
