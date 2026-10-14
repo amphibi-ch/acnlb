@@ -35,6 +35,24 @@ REQUIRED_FIELDS = (
 VALID_TRACKS = frozenset({"core", "workflows", "retrieval"})
 VALID_TIERS = frozenset({"高", "中", "低"})
 
+# Display labels for the three tracks. They live next to VALID_TRACKS because
+# three different consumers need them (the site index, the download manifest and
+# the web form); a second copy is a second thing to forget.
+TRACK_LABELS: dict[str, str] = {
+    "core": "核心",
+    "workflows": "工作流",
+    "retrieval": "检索",
+}
+
+# Graded-relevance tiers (section 2.6) and what each tier is worth by default.
+# A rubric may override per item, but this is the number the form pre-fills.
+DEFAULT_TIER_POINTS: dict[str, float] = {"高": 2.0, "中": 1.0, "低": 0.5}
+
+# The gold-standard classes a retrieval item may declare (section 2.6). Not
+# enforced by from_dict — it is a vocabulary, not a validation rule — but the web
+# form offers exactly these so it cannot invent a fourth.
+RETRIEVAL_CLASSES: tuple[str, ...] = ("statute", "similar_case", "document")
+
 
 class SchemaError(ValueError):
     """An item file does not conform to the section 3.3 schema."""
@@ -72,11 +90,11 @@ class GoldItem:
 class RetrievalGold:
     """Graded gold standard for a retrieval item."""
 
-    klass: str  # "statute" | "similar_case" | "document"
+    klass: str  # one of RETRIEVAL_CLASSES
     gold_items: list[GoldItem]
     # tier -> points awarded when the response surfaces a gold item at that tier
     tier_points: dict[str, float] = field(
-        default_factory=lambda: {"高": 2.0, "中": 1.0, "低": 0.5}
+        default_factory=lambda: dict(DEFAULT_TIER_POINTS)
     )
 
     @classmethod
@@ -84,7 +102,7 @@ class RetrievalGold:
         return cls(
             klass=d["class"],
             gold_items=[GoldItem.from_dict(g) for g in d["gold_items"]],
-            tier_points=d.get("tier_points", {"高": 2.0, "中": 1.0, "低": 0.5}),
+            tier_points=d.get("tier_points", dict(DEFAULT_TIER_POINTS)),
         )
 
 

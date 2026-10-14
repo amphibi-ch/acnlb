@@ -10,6 +10,7 @@ Header lines  → item metadata (§3.3)
 ## Documents  → paths, relative to the items dir; leave the section empty for open-book items
 ## Gold answer→ the model answer a competent lawyer would produce  (§3.6: write this FIRST)
 ## Rubric     → optional; if omitted you get a §3.4 skeleton with the negative taxonomy pre-filled
+## Retrieval gold → retrieval items only; required there, ignored otherwise
 
 Delete this comment block when you fill it in. Copy the example below to start.
 -->
@@ -45,6 +46,17 @@ notes:              SYNTHETIC — 合成示例
 
 （可留空。留空时会生成 §3.4 骨架，并把 §3.5 的负分分类全部预填好，你只需挑用。）
 
+## Retrieval gold
+
+（`track: retrieval` 时**必填**；其余轨道请整段删除。
+ 一行 `class:` 加若干行 `<层级> | <依据> | <说明>`，层级只能取 高 / 中 / 低。
+ 类案检索的层级需两名评阅人一致确定（§2.6）。）
+
+class: statute
+
+- 高 | 《民法典》第585条 | 焦点与规则均吻合
+- 中 | （2020）京民终5678号 | 案由相同，焦点部分重合
+
 ## Notes
 
 （可选：来源、是否合成、审核人、日期等。）
@@ -64,8 +76,9 @@ notes:              SYNTHETIC — 合成示例
 | `authority_basis` | no | 逗号/顿号分隔的法源，如 `《民法典》, 《公司法》(2023修订)` |
 | `notes` | no | 公开示例请注明 `SYNTHETIC` |
 
-**Retrieval items** additionally need graded gold. Add a `retrieval_gold` block to the
-generated JSON by hand:
+**Retrieval items** additionally need graded gold — the `## Retrieval gold` section
+above. It is written in the same form as everything else; the `retrieval_gold` block
+lands in the generated JSON on its own:
 
 ```json
 "retrieval_gold": {
@@ -78,4 +91,11 @@ generated JSON by hand:
 }
 ```
 
-tier 只能取 `高` / `中` / `低`。类案检索的层级需两名评阅人一致确定（§2.6）。
+`class` 建议取 `statute` / `similar_case` / `document`。tier 只能取 `高` / `中` / `低`。
+类案检索的层级需两名评阅人一致确定（§2.6）。缺少该段时 `new` 会直接报错，不会写出一个
+`validate` 必然拒绝的题目。
+
+## Web form
+
+填表这件事也可以在站点上做，产出的文件与这张表完全相同（并可由这张表原样导入）：
+`site/` 的「新增题目」区支持逐条填写、粘贴多份 intake 批量导入、导出 zip。

@@ -17,14 +17,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .rubric import parse_rubric_text
-from .schema import Item
+from .schema import DEFAULT_TIER_POINTS, VALID_TIERS, Item
 
 _SECTION = re.compile(r"^##\s+(.+?)\s*$")
 _HEADER_LINE = re.compile(r"^([A-Za-z_][A-Za-z0-9_ ]*?)\s*[:：]\s*(.*)$")
 
 # Section headings the parser understands (case-insensitive).
 _GOLD = ("gold answer", "gold", "参考答案")
-_KNOWN = {"prompt", "documents", "rubric", "notes"} | set(_GOLD)
+_RETRIEVAL = ("retrieval gold", "retrieval_gold", "检索 gold", "检索基准")
+_KNOWN = {"prompt", "documents", "rubric", "notes"} | set(_GOLD) | set(_RETRIEVAL)
+
+# Public view of the parser vocabulary. Exported so the web form can offer
+# exactly the headings `parse_intake` understands instead of re-typing them.
+INTAKE_SECTIONS: tuple[str, ...] = tuple(sorted(_KNOWN))
+GOLD_SECTIONS: tuple[str, ...] = _GOLD
+RETRIEVAL_SECTIONS: tuple[str, ...] = _RETRIEVAL
 
 # Skeleton rubric: §3.4 headings, one Style=N/A section, and the FULL closed
 # negative taxonomy pre-filled so a drafter picks from the allowed vocabulary
@@ -61,6 +68,51 @@ class Intake:
     gold: str = ""
     rubric: str = ""
     notes: str = ""
+    # retrieval items only: (class, [(tier, ref, note), ...]). Parsed here rather
+    # than hand-edited into the generated JSON afterwards — a gold block added by
+    # hand is a block `validate` cannot check until it is already committed.
+    retrieval_gold: tuple[str, list[tuple[str, str, str]]] | None = None
+
+
+def parse_gold_block(block: str) -> tuple[str, list[tuple[str, str, str]]]:
+    """Parse a ``## Retrieval gold`` body into ``(class, [(tier, ref, note)])``.
+
+    Body shape::
+
+        class: statute
+
+        - 高 | 《民法典》第585条 | 违约金司法调减的现行直接依据
+        - 中 | ...                  | ...
+    """
+    klass = ""
+    items: list[tuple[str, str, str]] = []
+    for raw in block.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        hm = _HEADER_LINE.match(line)
+        if hm and hm.group(1).strip().lower().replace(" ", "_") == "class":
+            klass = hm.group(2).strip()
+            continue
+        if not line.startswith(("-", "*")):
+            continue
+        parts = [p.strip() for p in line.lstrip("-*").split("|")]
+        if len(parts) < 2:
+            raise ValueError(
+                f"retrieval gold line needs '<tier> | <ref> | <note>': {line!r}"
+            )
+        tier, ref = parts[0], parts[1]
+        note = parts[2] if len(parts) > 2 else ""
+        if tier not in VALID_TIERS:
+            raise ValueError(
+                f"invalid tier {tier!r} in retrieval gold; use one of {sorted(VALID_TIERS)}"
+            )
+        if not ref:
+            raise ValueError(f"retrieval gold line has no ref: {line!r}")
+        items.append((tier, ref, note))
+    if not klass:
+        raise ValueError("retrieval gold section is missing 'class:'")
+    return klass, items
 
 
 def parse_intake(text: str) -> Intake:
@@ -83,6 +135,8 @@ def parse_intake(text: str) -> Intake:
                 intake.rubric = block.strip()
             elif section == "notes":
                 intake.notes = block.strip()
+            elif section in _RETRIEVAL:
+                intake.retrieval_gold = parse_gold_block(block)
         buf = []
 
     for raw in text.splitlines():
@@ -156,6 +210,24 @@ def scaffold(
 
     has_ctx = _as_bool(meta["has_context"]) if meta.get("has_context") else bool(intake.documents)
 
+    warnings: list[str] = []
+    if intake.retrieval_gold is not None and meta["track"] != "retrieval":
+        # The intake template carries this section so the form/CLI has one shape
+        # for both tracks. Dropping it loudly beats either writing an item that
+        # `validate` refuses, or failing on a template copied as documented.
+        warnings.append(
+            "'## Retrieval gold' section ignored: it only applies to track=retrieval"
+        )
+
+    if meta["track"] == "retrieval" and intake.retrieval_gold is None:
+        # Fail here with a message that names the fix. Letting Item.from_dict
+        # raise instead would print "must carry a retrieval_gold block" and send
+        # the drafter hunting for a JSON key the intake format never mentions.
+        raise ValueError(
+            "retrieval items need a '## Retrieval gold' section "
+            "(a 'class:' line plus '- <tier> | <ref> | <note>' lines)"
+        )
+
     rubric_rel = f"{iid}.rubric.md"
     gold_rel = f"gold/{iid}.md"
     data = {
@@ -174,6 +246,15 @@ def scaffold(
         "max_positive_points": rubric.max_positive_points,
         "notes": notes,
     }
+    if intake.retrieval_gold is not None and meta["track"] == "retrieval":
+        klass, gold_rows = intake.retrieval_gold
+        data["retrieval_gold"] = {
+            "class": klass,
+            "gold_items": [
+                {"ref": ref, "tier": tier, "note": note} for tier, ref, note in gold_rows
+            ],
+            "tier_points": dict(DEFAULT_TIER_POINTS),
+        }
 
     # Shape-check before writing anything: a bad form fails here, not at run time.
     Item.from_dict(data)
@@ -200,7 +281,6 @@ def scaffold(
     write(out / rubric_rel, rubric_text if rubric_text.endswith("\n") else rubric_text + "\n")
     write(out / f"{iid}.json", json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
-    warnings: list[str] = []
     for doc in intake.documents:
         if not (out / doc).exists():
             warnings.append(f"document not found yet: {doc} (put it under {out}/)")
